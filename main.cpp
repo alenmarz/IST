@@ -2,13 +2,13 @@
 #include "Tree.h"
 
 int main() {
-    std::vector<Element<int>*> elements;
-    for (int i = 0; i < 200; i++) {
+    std::vector<std::shared_ptr<Element<int>>> elements;
+    for (int i = 0; i < 20000; i++) {
         int digit = rand() % 1000;
-        elements.push_back(new Element<int>(digit, digit));
+        elements.push_back(std::make_shared<Element<int>>(digit, digit));
     }
-    elements.push_back(new Element<int>(10, 10));
-    auto tree = new Tree<int>(elements);
+    elements.push_back(std::make_shared<Element<int>>(10, 10));
+    auto tree = std::make_shared<Tree<int>>(elements);
 
     tree->print("");
     std::cout << "Size: " << tree->getSize() << std::endl;
@@ -21,8 +21,7 @@ int main() {
     std::cout << "Size: " << tree->getSize() << std::endl;
     std::cout << "Weight: " << tree->getWeight() << std::endl;
 
-    tree->insertElement(new Element<int>(1000, 1001));
-    //tree->deleteElement(1000);
+    tree->insertElement(std::make_shared<Element<int>>(1000, 1001));
 
     std::cout << "RESULT: " << tree->search(1000) << std::endl;
 

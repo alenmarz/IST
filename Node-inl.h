@@ -19,14 +19,15 @@ Node<T>::Node() :
 }
 
 template <typename T>
-Node<T>::Node(std::vector<Element<T> *> elements, int size) :
+Node<T>::Node(std::vector<std::shared_ptr<Element<T>>> elements, int size) :
     m_representatives(elements),
     m_initSize(size),
     m_size(size),
     m_weight(size),
-    m_counter(0) {
-    m_min = elements.empty() ? 0 : elements[0]->getKey();
-    m_max = elements.empty() ? 0 : elements[elements.size() - 1]->getKey();
+    m_counter(0),
+    m_min(elements.empty() ? 0 : elements[0]->getKey()),
+    m_max(elements.empty() ? 0 : elements[elements.size() - 1]->getKey()) {
+
     int ids_size = elements.size(); // Для простоты
     m_ids = std::vector<int>(ids_size, 0);
     if (m_max - m_min == 0) return;
@@ -81,7 +82,7 @@ bool Node<T>::isAvailableForInsert() {
 }
 
 template <typename T>
-void Node<T>::insert(Element<T> *element) {
+void Node<T>::insertElement(std::shared_ptr<Element<T>> element) {
     if (m_representatives.empty() || m_representatives[0]->getKey() <= element->getKey()) {
         m_representatives.push_back(element);
     } else {
@@ -91,14 +92,7 @@ void Node<T>::insert(Element<T> *element) {
 
 template <typename T>
 int Node<T>::getChildIndex(int key) {
-    int a = getMin();
-    int b = getMax();
-    int idIndex = (b - a) * (key - a) > 0 ? floor((key - a) / (b - a) * m_ids.size()) : 0;
-
-    int childIndex = 0;
-    if (!m_ids.empty() && idIndex < m_ids.size()) {
-        childIndex = m_ids[idIndex];
-    }
+    int childIndex = getStartIndexForSearch(key);
 
     while (childIndex < m_representatives.size() && key >= m_representatives[childIndex]->getKey()) {
         childIndex++;
@@ -110,15 +104,8 @@ int Node<T>::getChildIndex(int key) {
 template <typename T>
 bool Node<T>::deleteElement(int key) {
     if (m_representatives.empty()) return false;
-    int a = getMin();
-    int b = getMax();
-    int idIndex = (b - a) * (key - a) > 0 ? floor((key - a) / (b - a) * m_ids.size()) : 0;
 
-    int index = 0;
-    if (!m_ids.empty() && idIndex < m_ids.size()) {
-        index = m_ids[idIndex];
-    }
-
+    int index = getStartIndexForSearch(key);
     while (key > m_representatives[index]->getKey() && index < m_representatives.size() - 1) {
         index++;
     }
@@ -142,7 +129,7 @@ int Node<T>::getWeight() {
 }
 
 template <typename T>
-std::vector<Element<T> *> Node<T>::getRepresentatives() {
+std::vector<std::shared_ptr<Element<T>>> Node<T>::getRepresentatives() {
     auto copy = m_representatives;
     return copy;
 }
@@ -150,14 +137,8 @@ std::vector<Element<T> *> Node<T>::getRepresentatives() {
 template <typename T>
 T Node<T>::search(int key) {
     if (m_representatives.empty()) return T{};
-    int a = getMin();
-    int b = getMax();
-    int idIndex = (b - a) * (key - a) > 0 ? floor((key - a) / (b - a) * m_ids.size()) : 0;
 
-    int index = 0;
-    if (!m_ids.empty() && idIndex < m_ids.size()) {
-        index = m_ids[idIndex];
-    }
+    int index = getStartIndexForSearch(key);
 
     while ((key > m_representatives[index]->getKey() && index < m_representatives.size() - 1)
             || m_representatives[index]->isMarked()) {
@@ -169,6 +150,20 @@ T Node<T>::search(int key) {
     }
 
     return T{};
+}
+
+template <typename T>
+int Node<T>::getStartIndexForSearch(int key) {
+    int a = getMin();
+    int b = getMax();
+    int idIndex = (b - a) * (key - a) > 0 ? floor((key - a) / (b - a) * m_ids.size()) : 0;
+
+    int index = 0;
+    if (!m_ids.empty() && idIndex < m_ids.size()) {
+        index = m_ids[idIndex];
+    }
+
+    return index;
 }
 
 template <typename T>

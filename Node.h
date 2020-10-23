@@ -16,25 +16,27 @@ class Node {
     int m_size;
     int m_counter;
     int m_max, m_min;
-    std::vector<Element<T> *> m_representatives;
+    std::vector<std::shared_ptr<Element<T>>> m_representatives;
     std::vector<int> m_ids;
+
+    int getStartIndexForSearch(int key);
 
 public:
     Node();
-    Node(std::vector<Element<T>*> elements, int size);
+    Node(std::vector<std::shared_ptr<Element<T>>> elements, int size);
+    int getSize();
+    int getWeight();
+    int getMin();
+    int getMax();
+    int getChildIndex(int key);
+    std::vector<std::shared_ptr<Element<T>>> getRepresentatives();
     bool isOverflowing();
+    bool isAvailableForInsert();
     void increaseCounter();
     void increaseSize();
     void decreaseSize();
     void increaseWeight();
-    int getMin();
-    int getMax();
-    int getSize();
-    int getWeight();
-    std::vector<Element<T> *> getRepresentatives();
-    bool isAvailableForInsert();
-    void insert(Element<T> *element);
-    int getChildIndex(int key);
+    void insertElement(std::shared_ptr<Element<T>> element);
     bool deleteElement(int key);
     T search(int key);
     void print();

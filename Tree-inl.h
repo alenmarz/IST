@@ -7,12 +7,12 @@
 
 template <typename T>
 Tree<T>::Tree() :
-    m_root(new Node<T>()) {
+    m_root(std::make_shared<Node<T>>()) {
 }
 
 template <typename T>
-Tree<T>::Tree(std::vector<Element<T>*> elements) :
-    m_root(new Node<T>()) {
+Tree<T>::Tree(std::vector<std::shared_ptr<Element<T>>> elements) :
+    m_root(std::make_shared<Node<T>>()) {
 
     for (auto element: elements) {
         insertElement(element);
@@ -20,11 +20,11 @@ Tree<T>::Tree(std::vector<Element<T>*> elements) :
 }
 
 template <typename T>
-void Tree<T>::insertElement(Element<T> *element, std::vector<Tree<T>*> *path) {
+void Tree<T>::insertElement(std::shared_ptr<Element<T>> element, std::vector<Tree<T>*> *path) {
     path->push_back(this);
 
     if (m_root->isAvailableForInsert()) {
-        m_root->insert(element);
+        m_root->insertElement(element);
         createChildren();
 
         for (auto tree: *path) {
@@ -37,13 +37,13 @@ void Tree<T>::insertElement(Element<T> *element, std::vector<Tree<T>*> *path) {
         }
     } else {
         int index = m_root->getChildIndex(element->getKey());
-        Tree<T>* child = m_children[index];
+        std::shared_ptr<Tree<T>> child = m_children[index];
         return child->insertElement(element, path);
     }
 }
 
 template <typename T>
-void Tree<T>::insertElement(Element<T> *element) {
+void Tree<T>::insertElement(std::shared_ptr<Element<T>> element) {
     insertElement(element, new std::vector<Tree<T>*>());
 }
 
@@ -63,7 +63,7 @@ void Tree<T>::deleteElement(int key, std::vector<Tree<T>*> *path) {
         }
     } else if (!m_children.empty()) {
         int index = m_root->getChildIndex(key);
-        Tree<T>* child = m_children[index];
+        std::shared_ptr<Tree> child = m_children[index];
         return child->deleteElement(key, path);
     }
 }
@@ -79,7 +79,7 @@ T Tree<T>::search(int key) {
 
     if (!value && !m_children.empty()) {
         int index = m_root->getChildIndex(key);
-        Tree<T>* child = m_children[index];
+        std::shared_ptr<Tree<T>> child = m_children[index];
 
         return child->search(key);
     }
@@ -111,20 +111,20 @@ bool Tree<T>::updateTreeState() {
 }
 
 template <typename T>
-void Tree<T>::rebuild(std::vector<Element<T>*> *rebuildingElements) {
+void Tree<T>::rebuild(std::vector<std::shared_ptr<Element<T>>> *rebuildingElements) {
     if (rebuildingElements->empty()) return;
 
-    std::vector<Element<T>*> newRepresentatives;
+    std::vector<std::shared_ptr<Element<T>>> newRepresentatives;
     int step = floor(sqrt(rebuildingElements->size()));
 
-    auto childElements = new std::vector<Element<T>*>();
+    auto childElements = new std::vector<std::shared_ptr<Element<T>>>();
     m_children.clear();
 
     for (int i = 0, j = step / 2; i < rebuildingElements->size(); i++) {
         if (i == j) {
             newRepresentatives.push_back((*rebuildingElements)[i]);
 
-            auto newChild = new Tree<T>();
+            auto newChild = std::make_shared<Tree<T>>();
             newChild->rebuild(childElements);
             m_children.push_back(newChild);
             childElements->clear();
@@ -137,23 +137,25 @@ void Tree<T>::rebuild(std::vector<Element<T>*> *rebuildingElements) {
         }
     }
 
-    auto newChild = new Tree<T>();
+    auto newChild = std::make_shared<Tree<T>>();
     newChild->rebuild(childElements);
     m_children.push_back(newChild);
     childElements->clear();
 
-    m_root = new Node<T>(newRepresentatives, rebuildingElements->size());
+    m_root = std::make_shared<Node<T>>(newRepresentatives, rebuildingElements->size());
 }
 
 template <typename T>
 void Tree<T>::rebuild() {
-    std::vector<Element<T>*> *rebuildingElements = compoundRebuildingVector(); // RIGHT
+    std::vector<std::shared_ptr<Element<T>>> *rebuildingElements = compoundRebuildingVector(); // RIGHT
     rebuild(rebuildingElements);
 }
 
 template <typename T>
-std::vector<Element<T>*> * Tree<T>::compoundRebuildingVector(std::vector<Element<T>*> *rebuildingElements, int position) {
-    std::vector<Element<T> *> rootRepresentatives = m_root->getRepresentatives();
+std::vector<std::shared_ptr<Element<T>>> * Tree<T>::compoundRebuildingVector(
+        std::vector<std::shared_ptr<Element<T>>> *rebuildingElements,
+        int position) {
+    std::vector<std::shared_ptr<Element<T>>> rootRepresentatives = m_root->getRepresentatives();
 
     std::vector<int> childrenTreesElementsPositions;
     childrenTreesElementsPositions.push_back(position);
@@ -175,17 +177,17 @@ std::vector<Element<T>*> * Tree<T>::compoundRebuildingVector(std::vector<Element
 }
 
 template <typename T>
-std::vector<Element<T>*> * Tree<T>::compoundRebuildingVector() {
-    auto rebuildingElements = new std::vector<Element<T>*>(getSize());
+std::vector<std::shared_ptr<Element<T>>> * Tree<T>::compoundRebuildingVector() {
+    auto rebuildingElements = new std::vector<std::shared_ptr<Element<T>>>(getSize());
     return compoundRebuildingVector(rebuildingElements, 0);
 }
 
 template <typename T>
 void Tree<T>::createChildren() {
     if (m_children.empty()) {
-        m_children.push_back(new Tree<T>);
+        m_children.push_back(std::make_shared<Tree<T>>());
     }
-    m_children.push_back(new Tree<T>);
+    m_children.push_back(std::make_shared<Tree<T>>());
 }
 
 template <typename T>

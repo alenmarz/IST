@@ -33,8 +33,8 @@ public:
     void increaseSize();
     void decreaseSize();
     void increaseWeight();
-    void insertElement(ElementPtr<T> element);
-    bool deleteElement(int key);
+    void insert(ElementPtr<T> element);
+    bool remove(int key);
     T search(int key);
     void print();
 };

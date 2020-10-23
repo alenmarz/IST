@@ -12,7 +12,7 @@ Tree<T>::Tree(std::vector<ElementPtr<T>> elements) :
     m_root(std::make_shared<Node<T>>()) {
 
     for (auto element: elements) {
-        insertElement(element);
+        insert(element);
     }
 }
 
@@ -27,11 +27,13 @@ int Tree<T>::getWeight() {
 }
 
 template <typename T>
-void Tree<T>::insertElement(ElementPtr<T> element, std::vector<Tree<T>*> *path) {
+bool Tree<T>::insert(ElementPtr<T> element, std::vector<Tree<T>*> *path) {
+    if (m_root->search(element->getKey()) != T{}) return false;
+
     path->push_back(this);
 
     if (m_root->isAvailableForInsert()) {
-        m_root->insertElement(element);
+        m_root->insert(element);
         createChildren();
 
         for (auto tree: *path) {
@@ -39,45 +41,48 @@ void Tree<T>::insertElement(ElementPtr<T> element, std::vector<Tree<T>*> *path) 
         }
         for (auto tree: *path) {
             if (tree->updateTreeState()) {
-                return;
+                return true;
             }
         }
+        return true;
     } else {
         int index = m_root->getChildIndex(element->getKey());
         TreePtr<T> child = m_children[index];
-        return child->insertElement(element, path);
+        return child->insert(element, path);
     }
 }
 
 template <typename T>
-void Tree<T>::insertElement(ElementPtr<T> element) {
-    insertElement(element, new std::vector<Tree<T>*>());
+bool Tree<T>::insert(ElementPtr<T> element) {
+    return insert(element, new std::vector<Tree<T> *>());
 }
 
 template <typename T>
-void Tree<T>::deleteElement(int key, std::vector<Tree<T>*> *path) {
+bool Tree<T>::remove(int key, std::vector<Tree<T>*> *path) {
     path->push_back(this);
 
-    bool isElementDeleted = m_root->deleteElement(key);
+    bool isElementDeleted = m_root->remove(key);
     if (isElementDeleted) {
         for (auto tree: *path) {
-            tree->helpDelete();
+            tree->helpRemove();
         }
         for (auto tree: *path) {
             if (tree->updateTreeState()) {
-                return;
+                return true;
             }
         }
     } else if (!m_children.empty()) {
         int index = m_root->getChildIndex(key);
         TreePtr<T> child = m_children[index];
-        return child->deleteElement(key, path);
+        return child->remove(key, path);
     }
+
+    return false;
 }
 
 template <typename T>
-void Tree<T>::deleteElement(int key) {
-    deleteElement(key, new std::vector<Tree<T>*>());
+bool Tree<T>::remove(int key) {
+    return remove(key, new std::vector<Tree<T> *>());
 }
 
 template <typename T>
@@ -92,6 +97,11 @@ T Tree<T>::search(int key) {
     }
 
     return value;
+}
+
+template <typename T>
+bool Tree<T>::contains(int key) {
+    return search(key) != T{};
 }
 
 template <typename T>
@@ -113,7 +123,7 @@ void Tree<T>::helpInsert() {
 }
 
 template <typename T>
-void Tree<T>::helpDelete() {
+void Tree<T>::helpRemove() {
     m_root->decreaseSize();
 }
 

@@ -10,10 +10,10 @@ private:
     NodePtr<T> m_root;
     std::vector<std::shared_ptr<Tree>> m_children;
 
-    void insertElement(ElementPtr<T> element, std::vector<Tree<T>*> *path);
-    void deleteElement(int key, std::vector<Tree<T>*> *path);
+    bool insert(ElementPtr<T> element, std::vector<Tree<T>*> *path);
+    bool remove(int key, std::vector<Tree<T>*> *path);
     void helpInsert();
-    void helpDelete();
+    void helpRemove();
     void rebuild();
     void rebuild(std::vector<ElementPtr<T>> *rebuildingElements);
     std::vector<ElementPtr<T>> *compoundRebuildingVector();
@@ -26,8 +26,9 @@ public:
     explicit Tree(std::vector<ElementPtr<T>> elements);
     int getSize();
     int getWeight();
-    void insertElement(ElementPtr<T> element);
-    void deleteElement(int key);
+    bool insert(ElementPtr<T> element);
+    bool remove(int key);
+    bool contains(int key);
     T search(int key);
     void print(const std::string& prefix);
 };

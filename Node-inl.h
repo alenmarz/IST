@@ -105,7 +105,7 @@ void Node<T>::increaseWeight() {
 }
 
 template <typename T>
-void Node<T>::insertElement(ElementPtr<T> element) {
+void Node<T>::insert(ElementPtr<T> element) {
     if (m_representatives.empty() || m_representatives[0]->getKey() <= element->getKey()) {
         m_representatives.push_back(element);
     } else {
@@ -114,7 +114,7 @@ void Node<T>::insertElement(ElementPtr<T> element) {
 }
 
 template <typename T>
-bool Node<T>::deleteElement(int key) {
+bool Node<T>::remove(int key) {
     if (m_representatives.empty()) return false;
 
     int index = getStartIndexForSearch(key);

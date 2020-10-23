@@ -1,6 +1,3 @@
-//
-// Created by Alena Martsenyuk on 18/10/2020.
-//
 #pragma once
 #ifndef IST_ELEMENT_H
 #define IST_ELEMENT_H
@@ -18,6 +15,9 @@ public:
     void mark();
     bool isMarked();
 };
+
+template <typename T>
+using ElementPtr = std::shared_ptr<Element<T>>;
 
 #endif //IST_ELEMENT_H
 

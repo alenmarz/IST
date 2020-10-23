@@ -2,8 +2,8 @@
 #include "Tree.h"
 
 int main() {
-    std::vector<std::shared_ptr<Element<int>>> elements;
-    for (int i = 0; i < 20000; i++) {
+    std::vector<ElementPtr<int>> elements;
+    for (int i = 0; i < 200; i++) {
         int digit = rand() % 1000;
         elements.push_back(std::make_shared<Element<int>>(digit, digit));
     }

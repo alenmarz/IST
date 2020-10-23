@@ -1,6 +1,3 @@
-//
-// Created by Alena Martsenyuk on 18/10/2020.
-//
 #pragma once
 #include "Element.h"
 
@@ -19,11 +16,11 @@ T Element<T>::getValue() {
 }
 
 template <typename T>
-bool Element<T>::isMarked() {
-    return mb_marked;
+void Element<T>::mark() {
+    mb_marked = true;
 }
 
 template <typename T>
-void Element<T>::mark() {
-    mb_marked = true;
+bool Element<T>::isMarked() {
+    return mb_marked;
 }

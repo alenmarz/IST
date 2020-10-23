@@ -1,6 +1,3 @@
-//
-// Created by Alena Martsenyuk on 19/10/2020.
-//
 #pragma once
 #include "Tree.h"
 #include <iostream>
@@ -11,7 +8,7 @@ Tree<T>::Tree() :
 }
 
 template <typename T>
-Tree<T>::Tree(std::vector<std::shared_ptr<Element<T>>> elements) :
+Tree<T>::Tree(std::vector<ElementPtr<T>> elements) :
     m_root(std::make_shared<Node<T>>()) {
 
     for (auto element: elements) {
@@ -20,7 +17,17 @@ Tree<T>::Tree(std::vector<std::shared_ptr<Element<T>>> elements) :
 }
 
 template <typename T>
-void Tree<T>::insertElement(std::shared_ptr<Element<T>> element, std::vector<Tree<T>*> *path) {
+int Tree<T>::getSize() {
+    return m_root->getSize();
+}
+
+template <typename T>
+int Tree<T>::getWeight() {
+    return m_root->getWeight();
+}
+
+template <typename T>
+void Tree<T>::insertElement(ElementPtr<T> element, std::vector<Tree<T>*> *path) {
     path->push_back(this);
 
     if (m_root->isAvailableForInsert()) {
@@ -37,13 +44,13 @@ void Tree<T>::insertElement(std::shared_ptr<Element<T>> element, std::vector<Tre
         }
     } else {
         int index = m_root->getChildIndex(element->getKey());
-        std::shared_ptr<Tree<T>> child = m_children[index];
+        TreePtr<T> child = m_children[index];
         return child->insertElement(element, path);
     }
 }
 
 template <typename T>
-void Tree<T>::insertElement(std::shared_ptr<Element<T>> element) {
+void Tree<T>::insertElement(ElementPtr<T> element) {
     insertElement(element, new std::vector<Tree<T>*>());
 }
 
@@ -63,7 +70,7 @@ void Tree<T>::deleteElement(int key, std::vector<Tree<T>*> *path) {
         }
     } else if (!m_children.empty()) {
         int index = m_root->getChildIndex(key);
-        std::shared_ptr<Tree> child = m_children[index];
+        TreePtr<T> child = m_children[index];
         return child->deleteElement(key, path);
     }
 }
@@ -79,7 +86,7 @@ T Tree<T>::search(int key) {
 
     if (!value && !m_children.empty()) {
         int index = m_root->getChildIndex(key);
-        std::shared_ptr<Tree<T>> child = m_children[index];
+        TreePtr<T> child = m_children[index];
 
         return child->search(key);
     }
@@ -88,8 +95,15 @@ T Tree<T>::search(int key) {
 }
 
 template <typename T>
-void Tree<T>::helpDelete() {
-    m_root->decreaseSize();
+void Tree<T>::print(const std::string& prefix) {
+    std::cout << prefix << "└──";
+
+    m_root->print();
+    std:: cout << std::endl;
+
+    for (auto child: m_children) {
+        child->print(prefix + "│   ");
+    }
 }
 
 template <typename T>
@@ -99,25 +113,24 @@ void Tree<T>::helpInsert() {
 }
 
 template <typename T>
-bool Tree<T>::updateTreeState() {
-    m_root->increaseCounter();
-
-    if (m_root->isOverflowing()) {
-        rebuild();
-        return true;
-    }
-
-    return false;
+void Tree<T>::helpDelete() {
+    m_root->decreaseSize();
 }
 
 template <typename T>
-void Tree<T>::rebuild(std::vector<std::shared_ptr<Element<T>>> *rebuildingElements) {
+void Tree<T>::rebuild() {
+    std::vector<ElementPtr<T>> *rebuildingElements = compoundRebuildingVector(); // RIGHT
+    rebuild(rebuildingElements);
+}
+
+template <typename T>
+void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements) {
     if (rebuildingElements->empty()) return;
 
-    std::vector<std::shared_ptr<Element<T>>> newRepresentatives;
+    std::vector<ElementPtr<T>> newRepresentatives;
     int step = floor(sqrt(rebuildingElements->size()));
 
-    auto childElements = new std::vector<std::shared_ptr<Element<T>>>();
+    auto childElements = new std::vector<ElementPtr<T>>();
     m_children.clear();
 
     for (int i = 0, j = step / 2; i < rebuildingElements->size(); i++) {
@@ -128,12 +141,10 @@ void Tree<T>::rebuild(std::vector<std::shared_ptr<Element<T>>> *rebuildingElemen
             newChild->rebuild(childElements);
             m_children.push_back(newChild);
             childElements->clear();
+
+            j += step;
         } else {
             childElements->push_back((*rebuildingElements)[i]);
-        }
-
-        if (i == j) {
-            j += step;
         }
     }
 
@@ -146,16 +157,16 @@ void Tree<T>::rebuild(std::vector<std::shared_ptr<Element<T>>> *rebuildingElemen
 }
 
 template <typename T>
-void Tree<T>::rebuild() {
-    std::vector<std::shared_ptr<Element<T>>> *rebuildingElements = compoundRebuildingVector(); // RIGHT
-    rebuild(rebuildingElements);
+std::vector<ElementPtr<T>> * Tree<T>::compoundRebuildingVector() {
+    auto rebuildingElements = new std::vector<ElementPtr<T>>(getSize());
+    return compoundRebuildingVector(rebuildingElements, 0);
 }
 
 template <typename T>
-std::vector<std::shared_ptr<Element<T>>> * Tree<T>::compoundRebuildingVector(
-        std::vector<std::shared_ptr<Element<T>>> *rebuildingElements,
+std::vector<ElementPtr<T>> * Tree<T>::compoundRebuildingVector(
+        std::vector<ElementPtr<T>> *rebuildingElements,
         int position) {
-    std::vector<std::shared_ptr<Element<T>>> rootRepresentatives = m_root->getRepresentatives();
+    std::vector<ElementPtr<T>> rootRepresentatives = m_root->getRepresentatives();
 
     std::vector<int> childrenTreesElementsPositions;
     childrenTreesElementsPositions.push_back(position);
@@ -177,9 +188,15 @@ std::vector<std::shared_ptr<Element<T>>> * Tree<T>::compoundRebuildingVector(
 }
 
 template <typename T>
-std::vector<std::shared_ptr<Element<T>>> * Tree<T>::compoundRebuildingVector() {
-    auto rebuildingElements = new std::vector<std::shared_ptr<Element<T>>>(getSize());
-    return compoundRebuildingVector(rebuildingElements, 0);
+bool Tree<T>::updateTreeState() {
+    m_root->increaseCounter();
+
+    if (m_root->isOverflowing()) {
+        rebuild();
+        return true;
+    }
+
+    return false;
 }
 
 template <typename T>
@@ -188,26 +205,4 @@ void Tree<T>::createChildren() {
         m_children.push_back(std::make_shared<Tree<T>>());
     }
     m_children.push_back(std::make_shared<Tree<T>>());
-}
-
-template <typename T>
-int Tree<T>::getSize() {
-    return m_root->getSize();
-}
-
-template <typename T>
-int Tree<T>::getWeight() {
-    return m_root->getWeight();
-}
-
-template <typename T>
-void Tree<T>::print(const std::string& prefix) {
-    std::cout << prefix << "└──";
-
-    m_root->print();
-    std:: cout << std::endl;
-
-    for (auto child: m_children) {
-        child->print(prefix + "│   ");
-    }
 }

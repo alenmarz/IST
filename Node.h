@@ -43,4 +43,4 @@ template <typename T>
 using NodePtr = std::shared_ptr<Node<T>>;
 
 #endif //IST_NODE_H
-#include "Node-inl.h"
+#include "Node.hpp"

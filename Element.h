@@ -21,4 +21,4 @@ using ElementPtr = std::shared_ptr<Element<T>>;
 
 #endif //IST_ELEMENT_H
 
-#include "Element-inl.h"
+#include "Element.hpp"

@@ -38,4 +38,4 @@ using TreePtr = std::shared_ptr<Tree<T>>;
 
 #endif //IST_TREE_H
 
-#include "Tree-inl.h"
+#include "Tree.hpp"

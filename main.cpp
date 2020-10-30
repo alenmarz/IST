@@ -1,29 +1,50 @@
 #include <iostream>
+#include <set>
+#include <chrono>
 #include "Tree.h"
 
-int main() {
-    std::vector<ElementPtr<int>> elements;
-    for (int i = 0; i < 200; i++) {
-        int digit = rand() % 1000;
-        elements.push_back(std::make_shared<Element<int>>(digit, digit));
+void test() {
+    std::set<int> set;
+    Tree<int> tree;
+
+    for (int i = 0; i < 10000; i++) {
+        int digit = rand();
+        auto start = std::chrono::high_resolution_clock::now();
+        tree.insert(std::make_shared<Element<int>>(digit, digit));
+        auto finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = finish - start;
+
+        set.insert(digit);
+
+        std::cout << "Time: "  << elapsed.count() << " N: " << tree.getSize() << std::endl;
     }
-    elements.push_back(std::make_shared<Element<int>>(10, 10));
-    auto tree = std::make_shared<Tree<int>>(elements);
 
-    tree->print("");
-    std::cout << "Size: " << tree->getSize() << std::endl;
-    std::cout << "Weight: " << tree->getWeight() << std::endl;
-    std::cout << "-------------------------------" << std::endl;
+    while (true) {
+        int digit = rand();
+        switch (rand() % 3) {
+            case 0:
+                if (set.insert(digit).second != tree.insert(std::make_shared<Element<int>>(digit, digit))) {
+                    std::cout << "Insert Error!" << std::endl;
+                    tree.getSize();
+                }
+                break;
+            case 1:
+                if (set.erase(digit) != tree.remove(digit)) {
+                    std::cout << "Remove Error!" << std::endl;
+                    tree.getSize();
+                }
+                break;
+            case 2:
+                bool setContains = set.find(digit) != set.end();
+                if (setContains != tree.contains(digit)) {
+                    std::cout << "Contains Error!" << tree.getSize() << std::endl;
+                }
+                break;
+        }
+    }
+}
 
-    tree->deleteElement(10);
-
-    tree->print("");
-    std::cout << "Size: " << tree->getSize() << std::endl;
-    std::cout << "Weight: " << tree->getWeight() << std::endl;
-
-    tree->insertElement(std::make_shared<Element<int>>(1000, 1001));
-
-    std::cout << "RESULT: " << tree->search(1000) << std::endl;
-
+int main() {
+    test();
     return 0;
 }

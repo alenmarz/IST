@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-int const REBUILD_THRESHOLD = 4;
+double const REBUILD_THRESHOLD = 0.5;
 
 template <typename T>
 Node<T>::Node() :
@@ -31,7 +31,7 @@ Node<T>::Node(std::vector<ElementPtr<T>> elements, int size) :
 
     for (int i = 0, j = 0; i < ids_size; i++) {
         int ithSearchPosition = m_min + i * (m_max - m_min) / ids_size;
-        while (ithSearchPosition > elements[j]->getKey() && j < elements.size() - 1) {
+        while (j < elements.size() - 1 && ithSearchPosition > elements[j]->getKey()) {
             j++;
         }
         m_ids[i] = j;
@@ -61,6 +61,10 @@ int Node<T>::getMax() {
 template <typename T>
 int Node<T>::getChildIndex(int key) {
     int childIndex = getStartIndexForSearch(key);
+
+    while (childIndex > 0 && key < m_representatives[childIndex]->getKey()) {
+        childIndex--;
+    }
 
     while (childIndex < m_representatives.size() && key >= m_representatives[childIndex]->getKey()) {
         childIndex++;
@@ -118,11 +122,18 @@ bool Node<T>::remove(int key) {
     if (m_representatives.empty()) return false;
 
     int index = getStartIndexForSearch(key);
-    while (key > m_representatives[index]->getKey() && index < m_representatives.size() - 1) {
+
+    while (index > 0
+            && (key < m_representatives[index]->getKey() || m_representatives[index]->isMarked())) {
+        index--;
+    }
+
+    while (index < m_representatives.size() - 1
+            && (key > m_representatives[index]->getKey() || m_representatives[index]->isMarked())) {
         index++;
     }
 
-    if (m_representatives[index]->getKey() == key) {
+    if (m_representatives[index]->getKey() == key && !m_representatives[index]->isMarked()) {
         m_representatives[index]->mark();
         return true;
     }
@@ -131,21 +142,26 @@ bool Node<T>::remove(int key) {
 }
 
 template <typename T>
-T Node<T>::search(int key) {
-    if (m_representatives.empty()) return T{};
+ElementPtr<T> Node<T>::search(int key) {
+    if (m_representatives.empty()) return nullptr;
 
     int index = getStartIndexForSearch(key);
 
-    while ((key > m_representatives[index]->getKey() && index < m_representatives.size() - 1)
-            || m_representatives[index]->isMarked()) {
+    while (index > 0
+           && (key < m_representatives[index]->getKey() || m_representatives[index]->isMarked())) {
+        index--;
+    }
+
+    while (index < m_representatives.size() - 1
+           && (key > m_representatives[index]->getKey() || m_representatives[index]->isMarked())) {
         index++;
     }
 
-    if (m_representatives[index]->getKey() == key) {
-        return m_representatives[index]->getValue();
+    if (m_representatives[index]->getKey() == key && !m_representatives[index]->isMarked()) {
+        return m_representatives[index];
     }
 
-    return T{};
+    return nullptr;
 }
 
 template <typename T>

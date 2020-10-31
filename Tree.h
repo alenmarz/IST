@@ -29,7 +29,7 @@ public:
     bool insert(ElementPtr<T> element);
     bool remove(int key);
     bool contains(int key);
-    T search(int key);
+    ElementPtr<T> search(int key);
     void print(const std::string& prefix);
 };
 

@@ -35,7 +35,7 @@ public:
     void increaseWeight();
     void insert(ElementPtr<T> element);
     bool remove(int key);
-    T search(int key);
+    ElementPtr<T> search(int key);
     void print();
 };
 

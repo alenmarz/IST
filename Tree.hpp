@@ -28,7 +28,7 @@ int Tree<T>::getWeight() {
 
 template <typename T>
 bool Tree<T>::insert(ElementPtr<T> element, std::vector<Tree<T>*> *path) {
-    if (m_root->search(element->getKey()) != T{}) return false;
+    if (m_root->search(element->getKey()) != nullptr) return false;
 
     path->push_back(this);
 
@@ -77,7 +77,7 @@ bool Tree<T>::remove(int key, std::vector<Tree<T>*> *path) {
         return child->remove(key, path);
     }
 
-    return false;
+    return isElementDeleted;
 }
 
 template <typename T>
@@ -86,22 +86,21 @@ bool Tree<T>::remove(int key) {
 }
 
 template <typename T>
-T Tree<T>::search(int key) {
-    T value = m_root->search(key);
+ElementPtr<T> Tree<T>::search(int key) {
+    ElementPtr<T> elementPtr = m_root->search(key);
 
-    if (!value && !m_children.empty()) {
+    if (elementPtr == nullptr && !m_children.empty()) {
         int index = m_root->getChildIndex(key);
         TreePtr<T> child = m_children[index];
-
         return child->search(key);
     }
 
-    return value;
+    return elementPtr;
 }
 
 template <typename T>
 bool Tree<T>::contains(int key) {
-    return search(key) != T{};
+    return search(key) != nullptr;
 }
 
 template <typename T>
@@ -109,6 +108,7 @@ void Tree<T>::print(const std::string& prefix) {
     std::cout << prefix << "└──";
 
     m_root->print();
+    std::cout << " size: " << getSize();
     std:: cout << std::endl;
 
     for (auto child: m_children) {
@@ -181,7 +181,8 @@ std::vector<ElementPtr<T>> * Tree<T>::compoundRebuildingVector(
     std::vector<int> childrenTreesElementsPositions;
     childrenTreesElementsPositions.push_back(position);
     for (int i = 1; i < m_children.size(); i++) {
-        childrenTreesElementsPositions.push_back(childrenTreesElementsPositions[i - 1] + m_children[i - 1]->getSize() + 1);
+        int markedBias = rootRepresentatives[i - 1]->isMarked() ? 0 : 1;
+        childrenTreesElementsPositions.push_back(childrenTreesElementsPositions[i - 1] + m_children[i - 1]->getSize() + markedBias);
     }
 
     for (int i = 0; i < rootRepresentatives.size(); i++) {

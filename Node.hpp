@@ -16,21 +16,24 @@ Node<T>::Node() :
 }
 
 template <typename T>
-Node<T>::Node(std::vector<ElementPtr<T>> elements, int size) :
+Node<T>::Node(std::vector<ElementPtr<T>> elements, int size, int min, int max) :
     m_representatives(elements),
     m_initSize(size),
     m_size(size),
     m_weight(size),
     m_counter(0),
-    m_min(elements.empty() ? 0 : elements[0]->getKey()),
-    m_max(elements.empty() ? 0 : elements[elements.size() - 1]->getKey()) {
+    m_min(min),
+    m_max(max) {
 
-    int ids_size = elements.size();
+    int test = size;
+    int tmp = elements.size();
+    int ids_size = std::max(test, tmp);
+
     m_ids = std::vector<int>(ids_size, 0);
     if (m_max - m_min == 0) return;
 
     for (int i = 0, j = 0; i < ids_size; i++) {
-        int ithSearchPosition = m_min + i * (m_max - m_min) / ids_size;
+        int ithSearchPosition = m_min + 1.0 * i * (m_max - m_min) / ids_size;
         while (j < elements.size() - 1 && ithSearchPosition > elements[j]->getKey()) {
             j++;
         }
@@ -176,9 +179,14 @@ template <typename T>
 int Node<T>::getStartIndexForSearch(int key) {
     int a = getMin();
     int b = getMax();
-    int idIndex = (b - a) * (key - a) > 0 ? floor((key - a) / (b - a) * m_ids.size()) : 0;
+
+    int idIndex = ((b - a) > 0) && ((key - a) > 0) ? floor(1.0 * (key - a) * m_ids.size() / (b - a)) : 0;
+
+    int last = m_ids.size() - 1;
+    idIndex = std::min(idIndex, last);
 
     int index = 0;
+
     if (!m_ids.empty() && idIndex < m_ids.size()) {
         index = m_ids[idIndex];
     }

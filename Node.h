@@ -20,7 +20,7 @@ class Node {
 
 public:
     Node();
-    Node(std::vector<ElementPtr<T>> elements, int size);
+    Node(std::vector<ElementPtr<T>> elements, int size, int min, int max);
     int getSize();
     int getWeight();
     int getMin();

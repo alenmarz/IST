@@ -3,24 +3,21 @@
 #include <chrono>
 #include "Tree.h"
 
-void test() {
+void correctnessTest() {
     std::set<int> set;
     Tree<int> tree;
 
-    for (int i = 0; i < 10000; i++) {
-        int digit = rand();
-        auto start = std::chrono::high_resolution_clock::now();
-        tree.insert(std::make_shared<Element<int>>(digit, digit));
-        auto finish = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = finish - start;
-
-        set.insert(digit);
-
-        std::cout << "Time: "  << elapsed.count() << " N: " << tree.getSize() << std::endl;
+    for (int digit = 0; digit < 100000; digit++) {
+        if (rand() % 2) {
+            tree.insert(std::make_shared<Element<int>>(digit, digit));
+            set.insert(digit);
+        }
     }
 
+    tree.print("");
+
     while (true) {
-        int digit = rand();
+        int digit = rand() % 100000;
         switch (rand() % 3) {
             case 0:
                 if (set.insert(digit).second != tree.insert(std::make_shared<Element<int>>(digit, digit))) {
@@ -44,7 +41,68 @@ void test() {
     }
 }
 
+void test() {
+    std::set<int> set;
+    Tree<int> tree;
+
+    for (int digit = 0; digit < 5000000; digit++) {
+        if (rand() % 2) {
+            tree.insert(std::make_shared<Element<int>>(digit, digit));
+            set.insert(digit);
+        }
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 1000000; i++) {
+        srand(i);
+        int digit = rand() % 5000000;
+        tree.contains(digit);
+        /*switch (rand() % 3) {
+            case 0:
+                tree.insert(std::make_shared<Element<int>>(digit, digit));
+                //std::cout<<"insert" <<std::endl;
+                break;
+            case 1:
+                tree.remove(digit);
+                //std::cout<<"remove" <<std::endl;
+                break;
+            case 2:
+                tree.contains(digit);
+                //std::cout<<"contains" <<std::endl;
+                break;
+        }*/
+    }
+
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "Time for tree: " << elapsed.count() << std::endl;
+
+    start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 1000000; i++) {
+        srand(i);
+        int digit = rand() % 5000000;
+        set.find(digit);
+        /*switch (rand() % 3) {
+        //switch (0) {
+            case 0:
+                set.insert(digit);
+                break;
+            case 1:
+                set.erase(digit);
+                break;
+            case 2:
+                set.find(digit);
+                break;
+        }*/
+    }
+
+    finish = std::chrono::high_resolution_clock::now();
+    elapsed = finish - start;
+    std::cout << "Time for set: " << elapsed.count() << std::endl;
+}
+
 int main() {
     test();
+    //correctnessTest();
     return 0;
 }

@@ -31,6 +31,8 @@ public:
     bool contains(int key);
     ElementPtr<T> search(int key);
     void print(const std::string& prefix);
+    NodePtr<T> getNode();
+    std::vector<std::shared_ptr<Tree<T>>> getChildren();
 };
 
 template <typename T>

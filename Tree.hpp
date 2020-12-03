@@ -57,6 +57,43 @@ bool Tree<T>::insert(ElementPtr<T> element) {
     return insert(element, new std::vector<Tree<T> *>());
 }
 
+/*template <typename T>
+bool Tree<T>::insert(ElementPtr<T> element) {
+    std::vector<Tree<T>*> path;
+
+    Tree<T>* currentTree = this;
+    NodePtr<T> currentNode;
+    std::vector<TreePtr<T>> currentChildren;
+
+    while (true) {
+        currentNode = currentTree->getNode();
+        currentChildren = currentTree->getChildren();
+        if (currentNode->search(element->getKey()) != nullptr) return false;
+
+        path.push_back(currentTree);
+
+        if (currentNode->isAvailableForInsert()) {
+            currentNode->insert(element);
+            currentTree->createChildren();
+
+            for (auto tree: path) {
+                tree->helpInsert();
+            }
+            for (auto tree: path) {
+                if (tree->updateTreeState()) {
+                    return true;
+                }
+            }
+            return true;
+        } else {
+            int index = currentNode->getChildIndex(element->getKey());
+            currentTree = currentChildren[index].get();
+        }
+    }
+
+    return false;
+}*/
+
 template <typename T>
 bool Tree<T>::remove(int key, std::vector<Tree<T>*> *path) {
     path->push_back(this);
@@ -100,7 +137,8 @@ ElementPtr<T> Tree<T>::search(int key) {
 
 template <typename T>
 bool Tree<T>::contains(int key) {
-    return search(key) != nullptr;
+    ElementPtr<T> a = search(key);
+    return a != nullptr;
 }
 
 template <typename T>
@@ -163,7 +201,10 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements) {
     m_children.push_back(newChild);
     childElements->clear();
 
-    m_root = std::make_shared<Node<T>>(newRepresentatives, rebuildingElements->size());
+    int min = (*rebuildingElements)[0]->getKey();
+    int max = (*rebuildingElements)[rebuildingElements->size() - 1]->getKey();
+
+    m_root = std::make_shared<Node<T>>(newRepresentatives, rebuildingElements->size(), min, max);
 }
 
 template <typename T>
@@ -216,4 +257,14 @@ void Tree<T>::createChildren() {
         m_children.push_back(std::make_shared<Tree<T>>());
     }
     m_children.push_back(std::make_shared<Tree<T>>());
+}
+
+template <typename T>
+NodePtr<T> Tree<T>::getNode() {
+    return m_root;
+}
+
+template <typename T>
+std::vector<TreePtr<T>> Tree<T>::getChildren() {
+    return m_children;
 }

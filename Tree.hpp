@@ -29,8 +29,10 @@ int Tree<T>::getWeight() {
 template <typename T>
 bool Tree<T>::insert(ElementPtr<T> element, std::vector<Tree<T>*> *path) {
     ElementPtr<T> elementPtr = m_root->search(element->getKey());
-    if (elementPtr != nullptr && !elementPtr->isMarked())
+    if (elementPtr != nullptr && !elementPtr->isMarked()) {
+        delete path;
         return false;
+    }
 
     path->push_back(this);
 
@@ -41,6 +43,7 @@ bool Tree<T>::insert(ElementPtr<T> element, std::vector<Tree<T>*> *path) {
             tree->increaseSize();
         }
 
+        delete path;
         return true;
     }
 
@@ -53,58 +56,24 @@ bool Tree<T>::insert(ElementPtr<T> element, std::vector<Tree<T>*> *path) {
         }
         for (auto tree: *path) {
             if (tree->updateTreeState()) {
+                delete path;
                 return true;
             }
         }
-        return true;
     } else {
         int index = m_root->getChildIndex(element->getKey());
         TreePtr<T> child = m_children[index];
         return child->insert(element, path);
     }
+
+    delete path;
+    return true;
 }
 
 template <typename T>
 bool Tree<T>::insert(ElementPtr<T> element) {
     return insert(element, new std::vector<Tree<T> *>());
 }
-
-/*template <typename T>
-bool Tree<T>::insert(ElementPtr<T> element) {
-    std::vector<Tree<T>*> path;
-
-    Tree<T>* currentTree = this;
-    NodePtr<T> currentNode;
-    std::vector<TreePtr<T>> currentChildren;
-
-    while (true) {
-        currentNode = currentTree->getNode();
-        currentChildren = currentTree->getChildren();
-        if (currentNode->search(element->getKey()) != nullptr) return false;
-
-        path.push_back(currentTree);
-
-        if (currentNode->isAvailableForInsert()) {
-            currentNode->insert(element);
-            currentTree->createChildren();
-
-            for (auto tree: path) {
-                tree->helpInsert();
-            }
-            for (auto tree: path) {
-                if (tree->updateTreeState()) {
-                    return true;
-                }
-            }
-            return true;
-        } else {
-            int index = currentNode->getChildIndex(element->getKey());
-            currentTree = currentChildren[index].get();
-        }
-    }
-
-    return false;
-}*/
 
 template <typename T>
 bool Tree<T>::remove(int key, std::vector<Tree<T>*> *path) {
@@ -117,6 +86,7 @@ bool Tree<T>::remove(int key, std::vector<Tree<T>*> *path) {
         }
         for (auto tree: *path) {
             if (tree->updateTreeState()) {
+                delete path;
                 return true;
             }
         }
@@ -126,6 +96,7 @@ bool Tree<T>::remove(int key, std::vector<Tree<T>*> *path) {
         return child->remove(key, path);
     }
 
+    delete path;
     return isElementDeleted;
 }
 

@@ -102,7 +102,7 @@ void test() {
 }
 
 int main() {
-    //test();
-    correctnessTest();
+    test();
+    //correctnessTest();
     return 0;
 }

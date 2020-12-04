@@ -69,7 +69,7 @@ int Node<T>::getChildIndex(int key) {
         childIndex--;
     }
 
-    while (childIndex < m_representatives.size() && key >= m_representatives[childIndex]->getKey()) {
+    while (childIndex < m_representatives.size() && key > m_representatives[childIndex]->getKey()) {
         childIndex++;
     }
 

@@ -134,29 +134,17 @@ bool Tree<T>::remove(int key) {
     return remove(key, new std::vector<Tree<T> *>());
 }
 
-/*template <typename T>
+template <typename T>
 ElementPtr<T> Tree<T>::search(int key) {
     int index = m_root->getChildIndex(key);
 
     ElementPtr<T> elementPtr = index < m_root->getNodeSize() ? m_root->getByIndex(index) : nullptr;
-    if ((elementPtr == nullptr || elementPtr->getKey() != key) && !m_children.empty()) {
-        TreePtr<T> child = m_children[index];
-        return child->search(key);
-    }
 
-    return elementPtr;
-}*/
-
-template <typename T>
-ElementPtr<T> Tree<T>::search(int key) {
-    ElementPtr<T> elementPtr = m_root->search(key);
-
-    if (elementPtr != nullptr && elementPtr->isMarked()) {
+    if (elementPtr != nullptr && elementPtr->getKey() == key && elementPtr->isMarked()) {
         return nullptr;
     }
 
-    if (elementPtr == nullptr && !m_children.empty()) {
-        int index = m_root->getChildIndex(key);
+    if ((elementPtr == nullptr || elementPtr->getKey() != key) && !m_children.empty()) {
         TreePtr<T> child = m_children[index];
         return child->search(key);
     }

@@ -14,7 +14,6 @@ private:
     bool remove(int key, std::vector<Tree<T>*> *path);
     void helpInsert();
     void helpRemove();
-    void rebuild();
     void rebuild(std::vector<ElementPtr<T>> *rebuildingElements);
     std::vector<ElementPtr<T>> *compoundRebuildingVector();
     std::vector<ElementPtr<T>> *compoundRebuildingVector(std::vector<ElementPtr<T>> *rebuildingElements, int position);
@@ -29,6 +28,7 @@ public:
     int getWeight();
     bool insert(ElementPtr<T> element);
     bool remove(int key);
+    void rebuild();
     bool contains(int key);
     ElementPtr<T> search(int key);
     void print(const std::string& prefix);

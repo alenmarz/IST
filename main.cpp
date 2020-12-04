@@ -14,9 +14,11 @@ void correctnessTest() {
         }
     }
 
+    tree.rebuild();
     tree.print("");
 
-    while (true) {
+
+    /*while (true) {
         int digit = rand() % 100000;
         switch (rand() % 3) {
             case 0:
@@ -38,7 +40,7 @@ void correctnessTest() {
                 }
                 break;
         }
-    }
+    }*/
 }
 
 void test() {
@@ -51,6 +53,8 @@ void test() {
             set.insert(digit);
         }
     }
+
+    tree.rebuild();
 
     srand(1);
     auto start = std::chrono::high_resolution_clock::now();

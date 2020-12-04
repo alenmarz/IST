@@ -21,6 +21,11 @@ void Element<T>::mark() {
 }
 
 template <typename T>
+void Element<T>::unmark() {
+    mb_marked = false;
+}
+
+template <typename T>
 bool Element<T>::isMarked() {
     return mb_marked;
 }

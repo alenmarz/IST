@@ -36,6 +36,8 @@ public:
     void insert(ElementPtr<T> element);
     bool remove(int key);
     ElementPtr<T> search(int key);
+    ElementPtr<T> getByIndex(int index);
+    int getNodeSize();
     void print();
 };
 

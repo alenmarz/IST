@@ -77,6 +77,29 @@ int Node<T>::getChildIndex(int key) {
 }
 
 template <typename T>
+ElementPtr<T> Node<T>::search(int key) {
+    if (m_representatives.empty()) return nullptr;
+
+    int index = getStartIndexForSearch(key);
+
+    while (index > 0
+           && (key < m_representatives[index]->getKey())) {
+        index--;
+    }
+
+    while (index < m_representatives.size() - 1
+           && (key > m_representatives[index]->getKey())) {
+        index++;
+    }
+
+    if (m_representatives[index]->getKey() == key) {
+        return m_representatives[index];
+    }
+
+    return nullptr;
+}
+
+template <typename T>
 std::vector<ElementPtr<T>> Node<T>::getRepresentatives() {
     return m_representatives;
 }
@@ -145,29 +168,6 @@ bool Node<T>::remove(int key) {
 }
 
 template <typename T>
-ElementPtr<T> Node<T>::search(int key) {
-    if (m_representatives.empty()) return nullptr;
-
-    int index = getStartIndexForSearch(key);
-
-    while (index > 0
-           && (key < m_representatives[index]->getKey() || m_representatives[index]->isMarked())) {
-        index--;
-    }
-
-    while (index < m_representatives.size() - 1
-           && (key > m_representatives[index]->getKey() || m_representatives[index]->isMarked())) {
-        index++;
-    }
-
-    if (m_representatives[index]->getKey() == key && !m_representatives[index]->isMarked()) {
-        return m_representatives[index];
-    }
-
-    return nullptr;
-}
-
-template <typename T>
 void Node<T>::print() {
     for (auto element: m_representatives) {
         char mark = element->isMarked() ? '*' : ' ';
@@ -192,4 +192,14 @@ int Node<T>::getStartIndexForSearch(int key) {
     }
 
     return index;
+}
+
+template <typename T>
+ElementPtr<T> Node<T>::getByIndex(int index) {
+    return m_representatives[index];
+}
+
+template <typename T>
+int Node<T>::getNodeSize() {
+    return m_representatives.size();
 }

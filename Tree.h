@@ -20,6 +20,7 @@ private:
     std::vector<ElementPtr<T>> *compoundRebuildingVector(std::vector<ElementPtr<T>> *rebuildingElements, int position);
     bool updateTreeState();
     void createChildren();
+    void increaseSize();
 
 public:
     Tree();

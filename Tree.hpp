@@ -28,9 +28,21 @@ int Tree<T>::getWeight() {
 
 template <typename T>
 bool Tree<T>::insert(ElementPtr<T> element, std::vector<Tree<T>*> *path) {
-    if (m_root->search(element->getKey()) != nullptr) return false;
+    ElementPtr<T> elementPtr = m_root->search(element->getKey());
+    if (elementPtr != nullptr && !elementPtr->isMarked())
+        return false;
 
     path->push_back(this);
+
+    if (elementPtr != nullptr) {
+        elementPtr->unmark();
+
+        for (auto tree: *path) {
+            tree->increaseSize();
+        }
+
+        return true;
+    }
 
     if (m_root->isAvailableForInsert()) {
         m_root->insert(element);
@@ -122,9 +134,26 @@ bool Tree<T>::remove(int key) {
     return remove(key, new std::vector<Tree<T> *>());
 }
 
+/*template <typename T>
+ElementPtr<T> Tree<T>::search(int key) {
+    int index = m_root->getChildIndex(key);
+
+    ElementPtr<T> elementPtr = index < m_root->getNodeSize() ? m_root->getByIndex(index) : nullptr;
+    if ((elementPtr == nullptr || elementPtr->getKey() != key) && !m_children.empty()) {
+        TreePtr<T> child = m_children[index];
+        return child->search(key);
+    }
+
+    return elementPtr;
+}*/
+
 template <typename T>
 ElementPtr<T> Tree<T>::search(int key) {
     ElementPtr<T> elementPtr = m_root->search(key);
+
+    if (elementPtr != nullptr && elementPtr->isMarked()) {
+        return nullptr;
+    }
 
     if (elementPtr == nullptr && !m_children.empty()) {
         int index = m_root->getChildIndex(key);
@@ -163,6 +192,11 @@ void Tree<T>::helpInsert() {
 template <typename T>
 void Tree<T>::helpRemove() {
     m_root->decreaseSize();
+}
+
+template <typename T>
+void Tree<T>::increaseSize() {
+    m_root->increaseSize();
 }
 
 template <typename T>

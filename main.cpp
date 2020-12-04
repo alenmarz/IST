@@ -52,9 +52,9 @@ void test() {
         }
     }
 
+    srand(1);
     auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < 1000000; i++) {
-        srand(i);
+    for (int i = 0; i < 10000000; i++) {
         int digit = rand() % 5000000;
         tree.contains(digit);
         /*switch (rand() % 3) {
@@ -77,9 +77,9 @@ void test() {
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "Time for tree: " << elapsed.count() << std::endl;
 
+    srand(1);
     start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < 1000000; i++) {
-        srand(i);
+    for (int i = 0; i < 10000000; i++) {
         int digit = rand() % 5000000;
         set.find(digit);
         /*switch (rand() % 3) {
@@ -102,7 +102,7 @@ void test() {
 }
 
 int main() {
-    test();
-    //correctnessTest();
+    //test();
+    correctnessTest();
     return 0;
 }

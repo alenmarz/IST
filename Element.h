@@ -13,6 +13,7 @@ public:
     int getKey();
     T getValue();
     void mark();
+    void unmark();
     bool isMarked();
 };
 

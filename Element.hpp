@@ -3,6 +3,7 @@
 
 template <typename T>
 Element<T>::Element(int key, int value) : m_key(key), m_value(value), mb_marked(false) {
+    m_priority = rand() % 100;
 }
 
 template <typename T>
@@ -13,6 +14,11 @@ int Element<T>::getKey() {
 template <typename T>
 T Element<T>::getValue() {
     return m_value;
+}
+
+template <typename T>
+int Element<T>::getPriority() {
+    return m_priority;
 }
 
 template <typename T>

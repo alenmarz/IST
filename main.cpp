@@ -1,6 +1,8 @@
 #include <iostream>
 #include <set>
 #include <chrono>
+#include <memory>
+#include "Treap.h"
 #include "Tree.h"
 
 void correctnessTest() {
@@ -18,7 +20,7 @@ void correctnessTest() {
     tree.print("");
 
 
-    /*while (true) {
+    while (true) {
         int digit = rand() % 100000;
         switch (rand() % 3) {
             case 0:
@@ -40,7 +42,51 @@ void correctnessTest() {
                 }
                 break;
         }
-    }*/
+    }
+}
+
+void correctnessTest1() {
+    std::set<int> set;
+    Treap<int> tree;
+
+    for (int digit = 0; digit < 100; digit++) {
+        if (rand() % 2) {
+            tree.insert(std::make_shared<Element<int>>(digit, digit));
+            set.insert(digit);
+        }
+    }
+
+    while (true) {
+        int digit = rand() % 100;
+        switch (rand() % 3) {
+            case 0:
+                if (set.insert(digit).second != tree.insert(std::make_shared<Element<int>>(digit, digit))) {
+                    std::cout << "Insert Error!" << std::endl;
+                }
+                break;
+            case 1:
+                if (set.erase(digit) != tree.remove(digit)) {
+                    std::cout << "Remove Error!" << std::endl;
+                }
+                break;
+            case 2:
+                bool setContains = set.find(digit) != set.end();
+                if (setContains != tree.contains(digit)) {
+                    std::cout << "Contains Error!" << std::endl;
+                }
+                break;
+        }
+    }
+}
+
+void test1() {
+    Treap<int> treap;
+
+    for (int digit = 0; digit < 100; digit++) {
+        std::cout << digit << " " << treap.insert(std::make_shared<Element<int>>(digit, digit)) << std::endl;
+    }
+
+    treap.print("");
 }
 
 void test() {
@@ -54,13 +100,19 @@ void test() {
         }
     }
 
-    tree.rebuild();
+    //tree.rebuild();
+    int max_depth = 0;
+    long total_depth = 0;
 
     srand(1);
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < 10000000; i++) {
         int digit = rand() % 5000000;
+        //int depth = 0;
+        //tree.contains(digit, &depth);
         tree.contains(digit);
+        //total_depth += depth;
+        //max_depth = std::max(max_depth, depth);
         /*switch (rand() % 3) {
             case 0:
                 tree.insert(std::make_shared<Element<int>>(digit, digit));
@@ -80,6 +132,10 @@ void test() {
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "Time for tree: " << elapsed.count() << std::endl;
+    //std::cout << "max depth: " << max_depth << std::endl;
+    //std::cout << "avg: " << total_depth / 10000000 << std::endl;
+
+    //tree.print("");
 
     srand(1);
     start = std::chrono::high_resolution_clock::now();
@@ -105,8 +161,82 @@ void test() {
     std::cout << "Time for set: " << elapsed.count() << std::endl;
 }
 
+void test2() {
+    Treap<int> treap;
+    Tree<int> tree;
+
+    for (int digit = 0; digit < 5000000; digit++) {
+        if (rand() % 2) {
+            tree.insert(std::make_shared<Element<int>>(digit, digit));
+            treap.insert(std::make_shared<Element<int>>(digit, digit));
+        }
+    }
+
+    //tree.rebuild();
+    int max_depth = 0;
+    long total_depth = 0;
+
+    srand(1);
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        int digit = rand() % 5000000;
+        //int depth = 0;
+        //tree.contains(digit, &depth);
+        //tree.contains(digit);
+        //total_depth += depth;
+        //max_depth = std::max(max_depth, depth);
+        switch (rand() % 3) {
+            case 0:
+                tree.insert(std::make_shared<Element<int>>(digit, digit));
+                //std::cout<<"insert" <<std::endl;
+                break;
+            case 1:
+                tree.remove(digit);
+                //std::cout<<"remove" <<std::endl;
+                break;
+            case 2:
+                tree.contains(digit);
+                //std::cout<<"contains" <<std::endl;
+                break;
+        }
+    }
+
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "Time for tree: " << elapsed.count() << std::endl;
+    //std::cout << "max depth: " << max_depth << std::endl;
+    //std::cout << "avg: " << total_depth / 10000000 << std::endl;
+
+    //tree.print("");
+
+    srand(1);
+    start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        int digit = rand() % 5000000;
+        //treap.contains(digit);
+        switch (rand() % 3) {
+            case 0:
+                treap.insert(std::make_shared<Element<int>>(digit, digit));
+                //std::cout<<"insert" <<std::endl;
+                break;
+            case 1:
+                treap.remove(digit);
+                //std::cout<<"remove" <<std::endl;
+                break;
+            case 2:
+                treap.contains(digit);
+                //std::cout<<"contains" <<std::endl;
+                break;
+        }
+    }
+
+    finish = std::chrono::high_resolution_clock::now();
+    elapsed = finish - start;
+    std::cout << "Time for treap: " << elapsed.count() << std::endl;
+}
+
 int main() {
-    test();
-    //correctnessTest();
+    test2();
+    //correctnessTest1();
     return 0;
 }

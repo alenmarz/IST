@@ -49,14 +49,32 @@ void correctnessTest1() {
     std::set<int> set;
     Treap<int> tree;
 
-    for (int digit = 0; digit < 100; digit++) {
+    for (int digit = 0; digit < 15; digit++) {
         if (rand() % 2) {
             tree.insert(std::make_shared<Element<int>>(digit, digit));
             set.insert(digit);
         }
     }
 
-    while (true) {
+    tree.print("");
+    std::cout << "---------" << std::endl;
+
+    auto vect = std::make_shared<Actions<int>>();
+    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(0, 0), Contains));
+    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(1, 1), Remove));
+    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(2, 2), Contains));
+    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(8, 8), Remove));
+    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(10, 10), Insert));
+    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(20, 20), Insert));
+
+    auto result = tree.p_execute(vect);
+    tree.print("");
+    for (auto a: *result) {
+        std::cout << a << " ";
+    }
+    std::cout << std::endl;
+
+    /*while (int i = 0; i < 1000; i++) {
         int digit = rand() % 100;
         switch (rand() % 3) {
             case 0:
@@ -76,7 +94,7 @@ void correctnessTest1() {
                 }
                 break;
         }
-    }
+    }*/
 }
 
 void test1() {
@@ -236,7 +254,7 @@ void test2() {
 }
 
 int main() {
-    test2();
-    //correctnessTest1();
+    //test2();
+    correctnessTest1();
     return 0;
 }

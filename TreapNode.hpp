@@ -4,6 +4,13 @@
 #include "TreapNode.h"
 
 template <typename T>
+TreapNode<T>::TreapNode() :
+        m_representative(nullptr),
+        m_left(nullptr),
+        m_right(nullptr) {
+}
+
+template <typename T>
 TreapNode<T>::TreapNode(ElementPtr<T> element) :
         m_representative(element),
         m_left(nullptr),

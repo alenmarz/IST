@@ -10,6 +10,7 @@ class TreapNode {
     std::shared_ptr<TreapNode<T>> m_left, m_right;
 
 public:
+    TreapNode();
     explicit TreapNode(ElementPtr<T> element);
     ElementPtr<T> getRepresentative();
     void setLeft(std::shared_ptr<TreapNode<T>> node);

@@ -24,6 +24,12 @@ public:
 template <typename T>
 using ElementPtr = std::shared_ptr<Element<T>>;
 
+template <typename T>
+using Elements = std::vector<std::shared_ptr<Element<T>>>;
+
+template <typename T>
+using ElementsPtr = std::shared_ptr<std::vector<std::shared_ptr<Element<T>>>>;
+
 #endif //IST_ELEMENT_H
 
 #include "Element.hpp"

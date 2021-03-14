@@ -6,6 +6,8 @@
 #include <tuple>
 #include <utility>
 #include <iostream>
+#include "Element.h"
+#include "Action.h"
 
 template <typename T>
 class Treap {
@@ -15,8 +17,12 @@ class Treap {
     std::tuple<TreapNodePtr<T>, TreapNodePtr<T>, TreapNodePtr<T>> Split(TreapNodePtr<T>&& input, int key);
     TreapNodePtr<T>&& Merge(TreapNodePtr<T>&& less, TreapNodePtr<T>&& greater);
     TreapNodePtr<T>&& Merge(TreapNodePtr<T>&& less, TreapNodePtr<T>&& equal, TreapNodePtr<T>&& greater);
+    std::tuple<TreapNodePtr<T>, bool> insert(TreapNodePtr<T> node, ElementPtr<T> element);
+    std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> p_execute(TreapNodePtr<T> root, ActionsPtr<T> actions);
 
 public:
+    Treap();
+    std::shared_ptr<std::vector<bool>> p_execute(ActionsPtr<T> actions);
     bool insert(ElementPtr<T> element);
     bool remove(int key);
     bool contains(int key);

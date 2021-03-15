@@ -46,51 +46,94 @@ void correctnessTest() {
 }
 
 void correctnessTest1() {
-    std::set<int> set;
+    //std::set<int> set;
+    Treap<int> treap;
     Treap<int> tree;
 
-    for (int digit = 0; digit < 15; digit++) {
+    for (int digit = 0; digit < 100000; digit++) {
         if (rand() % 2) {
             tree.insert(std::make_shared<Element<int>>(digit, digit));
-            set.insert(digit);
+            treap.insert(std::make_shared<Element<int>>(digit, digit));
+            //set.insert(digit);
         }
     }
 
-    tree.print("");
-    std::cout << "---------" << std::endl;
+    //tree.print("");
+    //std::cout << "---------" << std::endl;
 
+
+    auto res = std::make_shared<std::vector<bool>>();
+    //auto v = std::make_shared<Actions<int>>();
     auto vect = std::make_shared<Actions<int>>();
-    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(0, 0), Contains));
-    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(1, 1), Remove));
-    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(2, 2), Contains));
-    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(8, 8), Remove));
-    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(10, 10), Insert));
-    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(20, 20), Insert));
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        int digit = rand() % 3;
+        //std::cout << digit << std::endl;
+        switch (digit) {
+            case 0:
+                //v->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
+                res->push_back(treap.insert(std::make_shared<Element<int>>(i, i)));
+                break;
+            case 1:
+                res->push_back(treap.remove(i));
+                //vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove));
+                break;
+            case 2:
+                res->push_back(treap.contains(i));
+                //vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains));
+                break;
+        }
+    }
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "Time for set: " << elapsed.count() << std::endl;
 
+        for (int i = 0; i < 10000000; i++) {
+            int digit = rand() % 3;
+            //std::cout << digit << std::endl;
+            switch (digit) {
+                case 0:
+                    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
+                    //res->push_back(set.insert(i).second);
+                    break;
+                case 1:
+                    //res->push_back(set.erase(i));
+                    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove));
+                    break;
+                case 2:
+                    //res->push_back(set.find(i) != set.end());
+                    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains));
+                    break;
+            }
+        }
+
+    start = std::chrono::high_resolution_clock::now();
     auto result = tree.p_execute(vect);
-    tree.print("");
-    for (auto a: *result) {
+    finish = std::chrono::high_resolution_clock::now();
+    elapsed = finish - start;
+    std::cout << "Time for tree: " << elapsed.count() << std::endl;
+    //tree.print("");
+    /*for (auto a: *result) {
         std::cout << a << " ";
     }
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
-    /*while (int i = 0; i < 1000; i++) {
-        int digit = rand() % 100;
+    /*srand(1);
+    for (int i = 0; i < 10000000; i++) {
         switch (rand() % 3) {
             case 0:
-                if (set.insert(digit).second != tree.insert(std::make_shared<Element<int>>(digit, digit))) {
-                    std::cout << "Insert Error!" << std::endl;
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Insert Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
                 }
                 break;
             case 1:
-                if (set.erase(digit) != tree.remove(digit)) {
-                    std::cout << "Remove Error!" << std::endl;
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Insert Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
                 }
                 break;
             case 2:
-                bool setContains = set.find(digit) != set.end();
-                if (setContains != tree.contains(digit)) {
-                    std::cout << "Contains Error!" << std::endl;
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Insert Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
                 }
                 break;
         }

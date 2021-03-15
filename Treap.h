@@ -20,6 +20,9 @@ class Treap {
     std::tuple<TreapNodePtr<T>, bool> insert(TreapNodePtr<T> node, ElementPtr<T> element);
     std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> p_execute(TreapNodePtr<T> root, ActionsPtr<T> actions);
 
+    std::tuple<TreapNodePtr<T>, bool> contains(TreapNodePtr<T> root, int key);
+    std::tuple<TreapNodePtr<T>, bool> remove(TreapNodePtr<T> root, int key);
+
 public:
     Treap();
     std::shared_ptr<std::vector<bool>> p_execute(ActionsPtr<T> actions);

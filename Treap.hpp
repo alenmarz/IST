@@ -115,14 +115,48 @@ std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> Treap<T>::p_exec
         v2->insert(v2->begin(), mid->at(0));
     }
 
-    sptl::fork2([&, v1 = v1, less = less] {
-        auto [node, success_vec] = p_execute(std::move(less), std::move(v1));
-        less_ = std::move(node);
-        res1 = std::move(success_vec);
-    }, [&, v2 = v2, greater = greater] {
-        auto [node, success_vec] = p_execute(std::move(greater), std::move(v2));
-        greater_ = std::move(node);
-        res2 = std::move(success_vec);
+    sptl::spguard([&, v1 = v1, v2 = v2] { return v1->size() + v2->size(); }, [&, v1 = v1, less = less, v2 = v2, greater = greater] {
+        sptl::fork2([&, v1 = v1, less = less] {
+            auto [node, success_vec] = p_execute(std::move(less), std::move(v1));
+            less_ = std::move(node);
+            res1 = std::move(success_vec);
+        }, [&, v2 = v2, greater = greater] {
+            auto [node, success_vec] = p_execute(std::move(greater), std::move(v2));
+            greater_ = std::move(node);
+            res2 = std::move(success_vec);
+        });
+    }, [&, v1 = v1, less = less, v2 = v2, greater = greater] {
+        for (auto action: *v1) {
+            if (action->getType() == Insert) {
+                auto [node, success] = insert(std::move(less), std::move(action->getElement()));
+                less_ = std::move(node);
+                res1->push_back(std::move(success));
+            } else if (action->getType() == Remove) {
+                auto [node, success] = remove(std::move(less), action->getElement()->getKey());
+                less_ = std::move(node);
+                res1->push_back(std::move(success));
+            } else if (action->getType() == Contains) {
+                auto [node, success] = contains(std::move(less), action->getElement()->getKey());
+                less_ = std::move(node);
+                res1->push_back(std::move(success));
+            }
+        }
+
+        for (auto action: *v2) {
+            if (action->getType() == Insert) {
+                auto [node, success] = insert(std::move(greater), std::move(action->getElement()));
+                greater_ = std::move(node);
+                res2->push_back(std::move(success));
+            } else if (action->getType() == Remove) {
+                auto [node, success] = remove(std::move(greater), action->getElement()->getKey());
+                greater_ = std::move(node);
+                res2->push_back(std::move(success));
+            } else if (action->getType() == Contains) {
+                auto [node, success] = contains(std::move(greater), action->getElement()->getKey());
+                greater_ = std::move(node);
+                res2->push_back(std::move(success));
+            }
+        }
     });
 
     less = std::move(less_);
@@ -196,11 +230,26 @@ bool Treap<T>::remove(int key) {
 }
 
 template <typename T>
+std::tuple<TreapNodePtr<T>, bool> Treap<T>::remove(TreapNodePtr<T> root, int key) {
+    auto [less, equal, greater] = Split(std::move(root), key);
+    root = Merge(std::move(less), std::move(greater));
+    return std::make_tuple(std::move(root), equal != nullptr);
+}
+
+template <typename T>
 bool Treap<T>::contains(int key) {
     auto [less, equal, greater] = Split(std::move(m_root), key);
     const bool contains = equal != nullptr;
     m_root = Merge(std::move(less), std::move(equal), std::move(greater));
     return contains;
+}
+
+template <typename T>
+std::tuple<TreapNodePtr<T>, bool> Treap<T>::contains(TreapNodePtr<T> root, int key) {
+    auto [less, equal, greater] = Split(std::move(root), key);
+    const bool contains = equal != nullptr;
+    root = Merge(std::move(less), std::move(equal), std::move(greater));
+    return std::make_tuple(std::move(root), contains);
 }
 
 template <typename T>

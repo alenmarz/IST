@@ -47,16 +47,17 @@ void correctnessTest() {
 
 void correctnessTest1() {
     //std::set<int> set;
+
     Treap<int> treap;
     Treap<int> tree;
 
-    for (int digit = 0; digit < 100000; digit++) {
+    /*for (int digit = 0; digit < 10; digit++) {
         if (rand() % 2) {
             tree.insert(std::make_shared<Element<int>>(digit, digit));
             treap.insert(std::make_shared<Element<int>>(digit, digit));
             //set.insert(digit);
         }
-    }
+    }*/
 
     //tree.print("");
     //std::cout << "---------" << std::endl;
@@ -66,43 +67,45 @@ void correctnessTest1() {
     //auto v = std::make_shared<Actions<int>>();
     auto vect = std::make_shared<Actions<int>>();
     auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < 10000000; i++) {
-        int digit = rand() % 3;
+    //srand(1);
+    for (int i = 0; i < 10000; i++) {
+        int digit = i;
         //std::cout << digit << std::endl;
-        switch (digit) {
+        switch (0) {
             case 0:
                 //v->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
                 res->push_back(treap.insert(std::make_shared<Element<int>>(i, i)));
                 break;
             case 1:
-                res->push_back(treap.remove(i));
+                //res->push_back(treap.remove(i));
                 //vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove));
                 break;
             case 2:
-                res->push_back(treap.contains(i));
+                //res->push_back(treap.contains(i));
                 //vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains));
                 break;
         }
     }
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
-    std::cout << "Time for set: " << elapsed.count() << std::endl;
+    std::cout << "Time for seq: " << elapsed.count() << std::endl;
 
-        for (int i = 0; i < 10000000; i++) {
-            int digit = rand() % 3;
+    //srand(1);
+        for (int i = 0; i < 10000; i++) {
+            int digit = i;
             //std::cout << digit << std::endl;
-            switch (digit) {
+            switch (0) {
                 case 0:
                     vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
                     //res->push_back(set.insert(i).second);
                     break;
                 case 1:
                     //res->push_back(set.erase(i));
-                    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove));
+                    //vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove));
                     break;
                 case 2:
                     //res->push_back(set.find(i) != set.end());
-                    vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains));
+                    //vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains));
                     break;
             }
         }
@@ -111,7 +114,7 @@ void correctnessTest1() {
     auto result = tree.p_execute(vect);
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
-    std::cout << "Time for tree: " << elapsed.count() << std::endl;
+    std::cout << "Time for par: " << elapsed.count() << std::endl;
     //tree.print("");
     /*for (auto a: *result) {
         std::cout << a << " ";
@@ -226,12 +229,12 @@ void test2() {
     Treap<int> treap;
     Tree<int> tree;
 
-    for (int digit = 0; digit < 5000000; digit++) {
+    /*for (int digit = 0; digit < 5000000; digit++) {
         if (rand() % 2) {
             tree.insert(std::make_shared<Element<int>>(digit, digit));
             treap.insert(std::make_shared<Element<int>>(digit, digit));
         }
-    }
+    }*/
 
     //tree.rebuild();
     int max_depth = 0;
@@ -296,8 +299,47 @@ void test2() {
     std::cout << "Time for treap: " << elapsed.count() << std::endl;
 }
 
+unsigned long long int fib_seq (long n) {
+    unsigned long long int result;
+    if (n < 2) {
+        result = n;
+    } else {
+        unsigned long long int a, b;
+        a = fib_seq(n-1);
+        b = fib_seq(n-2);
+        result = a + b;
+    }
+    return result;
+}
+
+unsigned long long int fib_par(long n) {
+    unsigned long long int result;
+    if (n < 2) {
+        result = n;
+    } else {
+        unsigned long long int a, b;
+        sptl::fork2([&] {
+            a = fib_par(n-1);
+        }, [&] {
+            b = fib_par(n-2);
+        });
+        result = a + b;
+    }
+    return result;
+}
+
 int main() {
     //test2();
     correctnessTest1();
+    /*auto start = std::chrono::high_resolution_clock::now();
+    fib_seq(100);
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "Time for seq: " << elapsed.count() << std::endl;
+    start = std::chrono::high_resolution_clock::now();
+    fib_par(100);
+    finish = std::chrono::high_resolution_clock::now();
+    elapsed = finish - start;
+    std::cout << "Time for par: " << elapsed.count() << std::endl;*/
     return 0;
 }

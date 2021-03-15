@@ -2,6 +2,7 @@
 #include "Treap.h"
 #include <memory>
 #include <vector>
+#include <math.h>
 #include <spgranularity.hpp>
 
 template <typename T>
@@ -16,10 +17,14 @@ std::tuple<TreapNodePtr<T>, TreapNodePtr<T>> Treap<T>::SplitBinary(TreapNodePtr<
     } else if (input->getRepresentative()->getKey() < key) {
         auto [less, greater] = SplitBinary(std::move(input->getRight()), key);
         input->setRight(std::move(less));
+        update_size(input);
+        update_size(greater);
         return std::make_tuple(std::move(input), std::move(greater));
     } else {
         auto [less, greater] = SplitBinary(std::move(input->getLeft()), key);
         input->setLeft(std::move(greater));
+        update_size(less);
+        update_size(input);
         return std::make_tuple(std::move(less), std::move(input));
     }
 }
@@ -28,6 +33,9 @@ template <typename T>
 std::tuple<TreapNodePtr<T>, TreapNodePtr<T>, TreapNodePtr<T>> Treap<T>::Split(TreapNodePtr<T>&& input, int key) {
     auto [less, greater_or_equal] = SplitBinary(std::move(input), key);
     auto [equal, greater] = SplitBinary(std::move(greater_or_equal), key + 1);
+    update_size(less);
+    update_size(equal);
+    update_size(greater);
     return std::make_tuple(std::move(less), std::move(equal), std::move(greater));
 }
 
@@ -37,9 +45,11 @@ TreapNodePtr<T>&& Treap<T>::Merge(TreapNodePtr<T>&& less, TreapNodePtr<T>&& grea
         return std::move(less ? less : greater);
     } else if (less->getRepresentative()->getPriority() > greater->getRepresentative()->getPriority()) {
         less->setRight(Merge(std::move(less->getRight()), std::move(greater)));
+        update_size(less);
         return std::move(less);
     } else {
         greater->setLeft(Merge(std::move(less), std::move(greater->getLeft())));
+        update_size(greater);
         return std::move(greater);
     }
 }
@@ -58,6 +68,7 @@ bool Treap<T>::insert(ElementPtr<T> element) {
         has_element = false;
     }
     m_root = Merge(std::move(less), std::move(equal), std::move(greater));
+    update_size(m_root);
     return !has_element;
 }
 
@@ -70,6 +81,7 @@ std::tuple<TreapNodePtr<T>, bool> Treap<T>::insert(TreapNodePtr<T> node, Element
         has_element = false;
     }
     node = Merge(std::move(less), std::move(equal), std::move(greater));
+    update_size(node);
     return std::make_tuple(std::move(node), !has_element);
 }
 
@@ -104,6 +116,7 @@ std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> Treap<T>::p_exec
             root = Merge(std::move(less), std::move(equal), std::move(greater));
         }
 
+        update_size(root);
         return std::make_tuple(std::move(root), std::move(res1));
     }
 
@@ -115,7 +128,9 @@ std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> Treap<T>::p_exec
         v2->insert(v2->begin(), mid->at(0));
     }
 
-    sptl::spguard([&, v1 = v1, v2 = v2] { return v1->size() + v2->size(); }, [&, v1 = v1, less = less, v2 = v2, greater = greater] {
+    sptl::spguard([&, v1 = v1, v2 = v2, less = less, greater = greater] {
+        return (v1->size() + v2->size()) * log(get_size(less) + get_size(greater));
+    }, [&, v1 = v1, less = less, v2 = v2, greater = greater] {
         sptl::fork2([&, v1 = v1, less = less] {
             auto [node, success_vec] = p_execute(std::move(less), std::move(v1));
             less_ = std::move(node);
@@ -188,6 +203,7 @@ std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> Treap<T>::p_exec
         }
     }
 
+    update_size(root);
     return std::make_tuple(std::move(root), std::move(res1));
 }
 
@@ -226,6 +242,7 @@ template <typename T>
 bool Treap<T>::remove(int key) {
     auto [less, equal, greater] = Split(std::move(m_root), key);
     m_root = Merge(std::move(less), std::move(greater));
+    update_size(m_root);
     return equal != nullptr;
 }
 
@@ -233,6 +250,7 @@ template <typename T>
 std::tuple<TreapNodePtr<T>, bool> Treap<T>::remove(TreapNodePtr<T> root, int key) {
     auto [less, equal, greater] = Split(std::move(root), key);
     root = Merge(std::move(less), std::move(greater));
+    update_size(root);
     return std::make_tuple(std::move(root), equal != nullptr);
 }
 
@@ -250,6 +268,16 @@ std::tuple<TreapNodePtr<T>, bool> Treap<T>::contains(TreapNodePtr<T> root, int k
     const bool contains = equal != nullptr;
     root = Merge(std::move(less), std::move(equal), std::move(greater));
     return std::make_tuple(std::move(root), contains);
+}
+
+template <typename T>
+size_t get_size(TreapNodePtr<T> node) {
+    return node ? node->getSize() : 0;
+}
+
+template <typename T>
+void update_size(TreapNodePtr<T> node) {
+    if (node) node->setSize(1 + get_size(node->getLeft()) + get_size(node->getRight()));
 }
 
 template <typename T>

@@ -68,7 +68,7 @@ void correctnessTest1() {
     auto vect = std::make_shared<Actions<int>>();
     auto start = std::chrono::high_resolution_clock::now();
     //srand(1);
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000000; i++) {
         int digit = i;
         //std::cout << digit << std::endl;
         switch (0) {
@@ -90,8 +90,11 @@ void correctnessTest1() {
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "Time for seq: " << elapsed.count() << std::endl;
 
+    //treap.print("");
+    //std::cout << "---------" << std::endl;
+
     //srand(1);
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             int digit = i;
             //std::cout << digit << std::endl;
             switch (0) {
@@ -115,6 +118,8 @@ void correctnessTest1() {
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
     std::cout << "Time for par: " << elapsed.count() << std::endl;
+
+    //tree.print("");
     //tree.print("");
     /*for (auto a: *result) {
         std::cout << a << " ";

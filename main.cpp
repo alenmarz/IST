@@ -2,8 +2,12 @@
 #include <set>
 #include <chrono>
 #include <memory>
+#include <cstdlib>
+#include <random>
+#include <stdlib.h>
 #include "Treap.h"
 #include "Tree.h"
+#include <time.h>
 
 void correctnessTest() {
     std::set<int> set;
@@ -45,6 +49,77 @@ void correctnessTest() {
     }
 }
 
+void test3() {
+    std::set<int> set;
+    Treap<int> treap;
+
+    for (int digit = 0; digit < 100; digit++) {
+        if (rand() % 2) {
+            set.insert(digit);
+            treap.insert(std::make_shared<Element<int>>(digit, digit));
+            std::cout << digit << std::endl;
+            //set.insert(digit);
+        }
+    }
+
+    treap.print("");
+
+    auto res = std::make_shared<std::vector<bool>>();
+    auto vect = std::make_shared<Actions<int>>();
+
+    srand(time(0));
+    for (int i = 0; i < 100; i++) {
+        int a = rand();
+        std::cout << a << " ";
+        switch (a % 3) {
+            case 0:
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
+                res->push_back(set.insert(i).second);
+                break;
+            case 1:
+                res->push_back(set.erase(i));
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove));
+                break;
+            case 2:
+                res->push_back(set.find(i) != set.end());
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains));
+                break;
+        }
+    }
+
+    std::cout << std::endl;
+
+    auto result = treap.p_execute(vect);
+    std::cout << "------------" << std::endl;
+
+    srand(time(0));
+    for (int i = 0; i < 100; i++) {
+        int a = rand();
+        std::cout << a << " ";
+        switch (a % 3) {
+            case 0:
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Insert Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
+                }
+                break;
+            case 1:
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Remove Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
+                }
+                break;
+            case 2:
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Contains Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
+                }
+                break;
+        }
+    }
+
+    std::cout << std::endl;
+
+    treap.print("-");
+}
+
 void correctnessTest1() {
     //std::set<int> set;
 
@@ -68,7 +143,7 @@ void correctnessTest1() {
     auto vect = std::make_shared<Actions<int>>();
     auto start = std::chrono::high_resolution_clock::now();
     //srand(1);
-    for (int i = 0; i < 1000000; i++) {
+    for (int i = 0; i < 10; i++) {
         int digit = i;
         //std::cout << digit << std::endl;
         switch (0) {
@@ -94,7 +169,7 @@ void correctnessTest1() {
     //std::cout << "---------" << std::endl;
 
     //srand(1);
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 10; i++) {
             int digit = i;
             //std::cout << digit << std::endl;
             switch (0) {
@@ -334,8 +409,8 @@ unsigned long long int fib_par(long n) {
 }
 
 int main() {
-    //test2();
-    correctnessTest1();
+    test3();
+    //correctnessTest1();
     /*auto start = std::chrono::high_resolution_clock::now();
     fib_seq(100);
     auto finish = std::chrono::high_resolution_clock::now();

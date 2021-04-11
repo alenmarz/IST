@@ -141,33 +141,36 @@ std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> Treap<T>::p_exec
             res2 = std::move(success_vec);
         });
     }, [&, v1 = v1, less = less, v2 = v2, greater = greater] {
+        less_ = std::move(less);
         for (auto action: *v1) {
             if (action->getType() == Insert) {
-                auto [node, success] = insert(std::move(less), std::move(action->getElement()));
+                auto [node, success] = insert(std::move(less_), std::move(action->getElement()));
                 less_ = std::move(node);
                 res1->push_back(std::move(success));
             } else if (action->getType() == Remove) {
-                auto [node, success] = remove(std::move(less), action->getElement()->getKey());
+                auto [node, success] = remove(std::move(less_), action->getElement()->getKey());
+                if (action->getElement()->getKey())
                 less_ = std::move(node);
                 res1->push_back(std::move(success));
             } else if (action->getType() == Contains) {
-                auto [node, success] = contains(std::move(less), action->getElement()->getKey());
+                auto [node, success] = contains(std::move(less_), action->getElement()->getKey());
                 less_ = std::move(node);
                 res1->push_back(std::move(success));
             }
         }
 
+        greater_ = std::move(greater);
         for (auto action: *v2) {
             if (action->getType() == Insert) {
-                auto [node, success] = insert(std::move(greater), std::move(action->getElement()));
+                auto [node, success] = insert(std::move(greater_), std::move(action->getElement()));
                 greater_ = std::move(node);
                 res2->push_back(std::move(success));
             } else if (action->getType() == Remove) {
-                auto [node, success] = remove(std::move(greater), action->getElement()->getKey());
+                auto [node, success] = remove(std::move(greater_), action->getElement()->getKey());
                 greater_ = std::move(node);
                 res2->push_back(std::move(success));
             } else if (action->getType() == Contains) {
-                auto [node, success] = contains(std::move(greater), action->getElement()->getKey());
+                auto [node, success] = contains(std::move(greater_), action->getElement()->getKey());
                 greater_ = std::move(node);
                 res2->push_back(std::move(success));
             }

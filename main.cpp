@@ -53,24 +53,22 @@ void test3() {
     std::set<int> set;
     Treap<int> treap;
 
-    for (int digit = 0; digit < 100; digit++) {
+    srand(3);
+    for (int digit = 0; digit < 1000000; digit++) {
         if (rand() % 2) {
             set.insert(digit);
             treap.insert(std::make_shared<Element<int>>(digit, digit));
-            std::cout << digit << std::endl;
-            //set.insert(digit);
         }
     }
 
-    treap.print("");
+    //treap.print("");
 
     auto res = std::make_shared<std::vector<bool>>();
     auto vect = std::make_shared<Actions<int>>();
 
-    srand(time(0));
-    for (int i = 0; i < 100; i++) {
+    srand(2);
+    for (int i = 0; i < 1000000; i++) {
         int a = rand();
-        std::cout << a << " ";
         switch (a % 3) {
             case 0:
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
@@ -90,12 +88,11 @@ void test3() {
     std::cout << std::endl;
 
     auto result = treap.p_execute(vect);
-    std::cout << "------------" << std::endl;
+    //std::cout << "------------" << std::endl;
 
-    srand(time(0));
-    for (int i = 0; i < 100; i++) {
+    srand(2);
+    for (int i = 0; i < 1000000; i++) {
         int a = rand();
-        std::cout << a << " ";
         switch (a % 3) {
             case 0:
                 if (res->at(i) != result->at(i)) {
@@ -113,11 +110,12 @@ void test3() {
                 }
                 break;
         }
+        rand();
     }
 
     std::cout << std::endl;
 
-    treap.print("-");
+    //treap.print("-");
 }
 
 void correctnessTest1() {
@@ -408,7 +406,7 @@ unsigned long long int fib_par(long n) {
     return result;
 }
 
-int main() {
+int main(int argc, char** argv) {
     test3();
     //correctnessTest1();
     /*auto start = std::chrono::high_resolution_clock::now();
@@ -417,7 +415,6 @@ int main() {
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "Time for seq: " << elapsed.count() << std::endl;
     start = std::chrono::high_resolution_clock::now();
-    fib_par(100);
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
     std::cout << "Time for par: " << elapsed.count() << std::endl;*/

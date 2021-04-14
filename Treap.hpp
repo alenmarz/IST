@@ -3,7 +3,21 @@
 #include <memory>
 #include <vector>
 #include <math.h>
-#include <spgranularity.hpp>
+
+#include <math.h>
+#include <functional>
+#include <stdlib.h>
+#include "bench.hpp"
+#include "mis.hpp"
+#include "loaders.hpp"
+#include "mis.h"
+#include "datapar.hpp"
+#include <chrono>
+#undef parallel_for
+
+using namespace pasl::pctl;
+
+granularity::control_by_prediction p_exec("p_exec");
 
 template <typename T>
 Treap<T>::Treap() :
@@ -128,10 +142,10 @@ std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> Treap<T>::p_exec
         v2->insert(v2->begin(), mid->at(0));
     }
 
-    sptl::spguard([&, v1 = v1, v2 = v2, less = less, greater = greater] {
+    granularity::cstmt(p_exec, [&, v1 = v1, v2 = v2, less = less, greater = greater] {
         return (v1->size() + v2->size()) * log(get_size(less) + get_size(greater));
     }, [&, v1 = v1, less = less, v2 = v2, greater = greater] {
-        sptl::fork2([&, v1 = v1, less = less] {
+        granularity::fork2([&, v1 = v1, less = less] {
             auto [node, success_vec] = p_execute(std::move(less), std::move(v1));
             less_ = std::move(node);
             res1 = std::move(success_vec);

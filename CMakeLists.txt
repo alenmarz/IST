@@ -1,12 +1,12 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.10)
 project(IST)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 
 include_directories(.)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -fcilkplus -lcilkrts -DUSE_CILK_PLUS_RUNTIME")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -fcilkplus -lcilkrts -DUSE_CILK_PLUS_RUNTIME")
 
 add_executable(IST
         Element.hpp

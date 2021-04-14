@@ -71,8 +71,8 @@ void test3() {
         int a = rand();
         switch (a % 3) {
             case 0:
-                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
                 res->push_back(set.insert(i).second);
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
                 break;
             case 1:
                 res->push_back(set.erase(i));
@@ -377,34 +377,6 @@ void test2() {
     std::cout << "Time for treap: " << elapsed.count() << std::endl;
 }
 
-unsigned long long int fib_seq (long n) {
-    unsigned long long int result;
-    if (n < 2) {
-        result = n;
-    } else {
-        unsigned long long int a, b;
-        a = fib_seq(n-1);
-        b = fib_seq(n-2);
-        result = a + b;
-    }
-    return result;
-}
-
-unsigned long long int fib_par(long n) {
-    unsigned long long int result;
-    if (n < 2) {
-        result = n;
-    } else {
-        unsigned long long int a, b;
-        sptl::fork2([&] {
-            a = fib_par(n-1);
-        }, [&] {
-            b = fib_par(n-2);
-        });
-        result = a + b;
-    }
-    return result;
-}
 
 int main(int argc, char** argv) {
     test3();

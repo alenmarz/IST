@@ -10,12 +10,14 @@ template <typename T>
 class Action {
     ElementPtr<T> m_element;
     action_type m_type;
+    int m_position;
 
 public:
     Action(ElementPtr<T> element, action_type type);
     ElementPtr<T> getElement();
     action_type getType();
     int getKey();
+    int getPosition();
 };
 
 template <typename T>

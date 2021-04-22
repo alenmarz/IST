@@ -49,21 +49,16 @@ void correctnessTest() {
     }
 }
 
-void test3() {
-    std::set<int> set;
+void test31() {
     Treap<int> treap;
 
     srand(3);
     for (int digit = 0; digit < 1000000; digit++) {
         if (rand() % 2) {
-            set.insert(digit);
             treap.insert(std::make_shared<Element<int>>(digit, digit));
         }
     }
 
-    //treap.print("");
-
-    auto res = std::make_shared<std::vector<bool>>();
     auto vect = std::make_shared<Actions<int>>();
 
     srand(2);
@@ -71,51 +66,22 @@ void test3() {
         int a = rand();
         switch (a % 3) {
             case 0:
-                res->push_back(set.insert(i).second);
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert));
                 break;
             case 1:
-                res->push_back(set.erase(i));
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove));
                 break;
             case 2:
-                res->push_back(set.find(i) != set.end());
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains));
                 break;
         }
     }
 
-    std::cout << std::endl;
-
-    auto result = treap.p_execute(vect);
-    //std::cout << "------------" << std::endl;
-
-    srand(2);
-    for (int i = 0; i < 1000000; i++) {
-        int a = rand();
-        switch (a % 3) {
-            case 0:
-                if (res->at(i) != result->at(i)) {
-                    std::cout << "Insert Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
-                }
-                break;
-            case 1:
-                if (res->at(i) != result->at(i)) {
-                    std::cout << "Remove Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
-                }
-                break;
-            case 2:
-                if (res->at(i) != result->at(i)) {
-                    std::cout << "Contains Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
-                }
-                break;
-        }
-        rand();
-    }
-
-    std::cout << std::endl;
-
-    //treap.print("-");
+    auto start = std::chrono::high_resolution_clock::now();
+    treap.p_execute(vect);
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "exectime: " << elapsed.count() << std::endl;
 }
 
 void correctnessTest1() {

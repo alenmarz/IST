@@ -19,3 +19,8 @@ int Action<T>::getKey() {
     return m_element->getKey();
 }
 
+template <typename T>
+int Action<T>::getPosition() {
+    return m_element->getPosition();
+}
+

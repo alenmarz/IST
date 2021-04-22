@@ -17,6 +17,7 @@ private:
     void rebuild(std::vector<ElementPtr<T>> *rebuildingElements);
     std::vector<ElementPtr<T>> *compoundRebuildingVector();
     std::vector<ElementPtr<T>> *compoundRebuildingVector(std::vector<ElementPtr<T>> *rebuildingElements, int position);
+    std::shared_ptr<std::vector<bool>> p_execute(ActionsPtr<T> actions, std::shared_ptr<std::vector<int>> sum_v);
     bool updateTreeState();
     void createChildren();
     void increaseSize();
@@ -29,7 +30,9 @@ public:
     bool insert(ElementPtr<T> element);
     bool remove(int key);
     void rebuild();
+    std::shared_ptr<std::vector<bool>> rebuild(ActionsPtr<T> actions);
     bool contains(int key);
+    std::shared_ptr<std::vector<bool>> p_execute(ActionsPtr<T> actions);
     ElementPtr<T> search(int key);
     void print(const std::string& prefix);
     NodePtr<T> getNode();

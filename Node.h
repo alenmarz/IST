@@ -28,6 +28,7 @@ public:
     int getChildIndex(int key);
     std::vector<ElementPtr<T>> getRepresentatives();
     bool isOverflowing();
+    bool isOverflowing(int count);
     bool isAvailableForInsert();
     void increaseCounter();
     void increaseSize();

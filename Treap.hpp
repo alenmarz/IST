@@ -163,7 +163,6 @@ std::tuple<TreapNodePtr<T>, std::shared_ptr<std::vector<bool>>> Treap<T>::p_exec
                 res1->push_back(std::move(success));
             } else if (action->getType() == Remove) {
                 auto [node, success] = remove(std::move(less_), action->getElement()->getKey());
-                if (action->getElement()->getKey())
                 less_ = std::move(node);
                 res1->push_back(std::move(success));
             } else if (action->getType() == Contains) {

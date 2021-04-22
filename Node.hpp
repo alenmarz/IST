@@ -110,6 +110,11 @@ bool Node<T>::isOverflowing() {
 }
 
 template <typename T>
+bool Node<T>::isOverflowing(int count) {
+    return count + m_counter > m_initSize / REBUILD_THRESHOLD;
+}
+
+template <typename T>
 bool Node<T>::isAvailableForInsert() {
     return m_weight <= 1;
 }

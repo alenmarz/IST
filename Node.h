@@ -32,8 +32,10 @@ public:
     bool isAvailableForInsert();
     void increaseCounter();
     void increaseSize();
+    void increaseSize(int n);
     void decreaseSize();
     void increaseWeight();
+    void increaseWeight(int n);
     void insert(ElementPtr<T> element);
     bool remove(int key);
     ElementPtr<T> search(int key);

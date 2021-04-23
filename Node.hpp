@@ -130,6 +130,11 @@ void Node<T>::increaseSize() {
 }
 
 template <typename T>
+void Node<T>::increaseSize(int n) {
+    m_size += n;
+}
+
+template <typename T>
 void Node<T>::decreaseSize() {
     m_size--;
 }
@@ -137,6 +142,11 @@ void Node<T>::decreaseSize() {
 template <typename T>
 void Node<T>::increaseWeight() {
     m_weight++;
+}
+
+template <typename T>
+void Node<T>::increaseWeight(int n) {
+    m_weight += n;
 }
 
 template <typename T>

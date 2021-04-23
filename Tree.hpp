@@ -8,6 +8,8 @@
 #include "mis.h"
 #include "datapar.hpp"
 #include <chrono>
+#include <map>
+
 #undef parallel_for
 
 using namespace pasl::pctl;
@@ -140,22 +142,25 @@ bool Tree<T>::contains(int key) {
 }
 
 template <typename T>
-std::shared_ptr<std::vector<bool>> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<std::vector<int>> sum_v) {
+std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<std::vector<int>> sum_v, std::shared_ptr<std::vector<bool>> res) {
     if (actions == nullptr || actions->empty()) {
-        return nullptr;
+        return std::make_tuple(0, 0);
     }
 
+    int inserted = 0, removed = 0;
+
     if (!m_children.size()) {
-        auto result = std::make_shared<std::vector<bool>>(actions->size());
-        for (int i; i < result->size(); i++) {
-            result[i] = false;
+        for (auto action: *actions) {
+            res[action->getPosition()] = false;
         }
-        return result;
+        return std::make_tuple(0, 0);
     }
 
     auto modifying_elem_count = sum_v->at(actions[0]->getPosition()) - sum_v->at(actions[actions->size() - 1]->getPosition());
     if (m_root->isOverflowing(modifying_elem_count)) {
-        return rebuild(actions);
+        int old_size = m_root->getSize();
+        rebuild(actions, res);
+        return std::make_tuple(0, old_size - m_root->getSize());
     }
 
     auto current_child_index = -1;
@@ -167,18 +172,22 @@ std::shared_ptr<std::vector<bool>> Tree<T>::p_execute(ActionsPtr<T> actions, std
         if (elementPtr) {
             auto marked = elementPtr->isMarked();
             if (action->getType() == Insert) {
-                if (marked) elementPtr->unmark();
-                res->push_back(marked);
+                if (marked) {
+                    elementPtr->unmark();
+                    helpInsert();
+                    inserted++;
+                }
+                res->at(action->getPosition()) = marked;
             } else if (action->getType() == Remove) {
                 if (!marked) {
                     elementPtr->mark();
+                    helpRemove();
+                    removed++;
                 }
-                res->push_back(!marked);
+                res->at(action->getPosition()) = !marked;
             } else if (action->getType() == Contains) {
-                res->push_back(!marked);
+                res->at(action->getPosition()) = !marked;
             }
-            // TODO: надо как-то правильно вставлять res в массив для возвращения
-            // TODO: поддерживать размер и вес -- мб как-то в return передавать стоит?
         } else {
             int index = m_root->getChildIndex(elementPtr->getKey());
             if (current_child_index != index) {
@@ -192,21 +201,26 @@ std::shared_ptr<std::vector<bool>> Tree<T>::p_execute(ActionsPtr<T> actions, std
 
     // Параллельная часть
     if (current_child_index >= 0) {
+        auto child_results = std::vector<std::tuple<std::shared_ptr<std::vector<bool>>, int, int>>(child_indexes.size());
         pasl::pctl::parallel_for(0, child_indexes.size(), [&] (int i) {
-            // TODO: поддерживать размер и вес -- передавать количество вставленных - удаленных
-            auto result = m_children[index]->p_execute(child_action_map[child_indexes[i]], sum_v);
-            // TODO: как-то воткнуть это в общий массив
+            child_results[i] = m_children[index]->p_execute(child_action_map[child_indexes[i]], sum_v, res);
         });
+        for (auto result: child_results) {
+            inserted += std::get<1>(result);
+            removed += std::get<2>(result);
+            m_root->increaseSize(std::get<1>(result) - std::get<2>(result));
+            m_root->increaseWeight(std::get<1>(result));
+        }
     }
 
-    return res;
+    return std::make_tuple(inserted, removed);
 }
 
 template <typename T>
 std::shared_ptr<std::vector<bool>> Tree<T>::p_execute(ActionsPtr<T> actions) {
     auto sum_v = build_modifying_sum_vector(actions);
-    auto [node, result] = p_execute(m_root, std::move(actions), sum_v);
-    m_root = std::move(node);
+    auto res = std::make_shared<std::vector<bool>>(actions->size());
+    auto result = p_execute(std::move(actions), sum_v, res);
     return std::move(result);
 }
 
@@ -253,9 +267,8 @@ void Tree<T>::increaseSize() {
 }
 
 template <typename T>
-std::shared_ptr<std::vector<bool>> Tree<T>::rebuild(ActionsPtr<T> actions) {
+void Tree<T>::rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> res) {
     std::vector<ElementPtr<T>> *rebuildingElements = compoundRebuildingVector(); // RIGHT
-    auto res = std::make_shared<std::vector<bool>>();
     auto result_elements = new std::vector<ElementPtr<T>>();
 
     int i, j;
@@ -272,24 +285,24 @@ std::shared_ptr<std::vector<bool>> Tree<T>::rebuild(ActionsPtr<T> actions) {
                 if (action->getType() == Insert) {
                     // т.к. если в rebuildingElements все элементы unmarked
                     result_elements->push_back(element);
-                    res->push_back(false);
+                    res->at(action->getPosition()) = false;
                     i++; j++;
                 } else if (action->getType() == Remove) {
-                    res->push_back(true);
+                    res->at(action->getPosition()) = true;
                     i++; j++;
                 } else if (action->getType() == Contains) {
                     result_elements->push_back(element);
-                    res->push_back(true);
+                    res->at(action->getPosition()) = true;
                     i++; j++;
                 }
             } else {
                 if (action->getType() == Insert) {
                     result_elements->push_back(action->getElement());
-                    res->push_back(true);
+                    res->at(action->getPosition()) = true;
                 } else if (action->getType() == Remove) {
-                    res->push_back(false);
+                    res->at(action->getPosition()) = false;
                 } else if (action->getType() == Contains) {
-                    res->push_back(false);
+                    res->at(action->getPosition()) = false;
                 }
                 j++;
             }
@@ -298,7 +311,6 @@ std::shared_ptr<std::vector<bool>> Tree<T>::rebuild(ActionsPtr<T> actions) {
 
     rebuild(result_elements);
     delete rebuildingElements;
-    return res;
 }
 
 template <typename T>

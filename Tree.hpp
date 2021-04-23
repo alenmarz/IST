@@ -157,8 +157,17 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<s
         return std::make_tuple(0, 0);
     }
 
+    std::cout << "-------------" << std::endl;
+    m_root->print();
+    std::cout << std::endl;
+
     auto modifying_elem_count = sum_v->at(actions->at(0)->getPosition()) - sum_v->at((actions->at(actions->size() - 1))->getPosition());
-    if (m_root->isOverflowing(modifying_elem_count)) {
+    if (m_root->isOverflowing(modifying_elem_count) || m_root->getSize() <= 2) {
+	std::cout << "overflows" << std::endl;
+	for (auto a: *actions) {
+		std::cout << a->getKey() << " " << std::endl;
+	}
+	std::cout << std::endl;
         int old_size = m_root->getSize();
         rebuild(actions, res);
         return std::make_tuple(0, old_size - m_root->getSize());
@@ -272,10 +281,12 @@ void Tree<T>::rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> 
     std::vector<ElementPtr<T>> *rebuildingElements = compoundRebuildingVector(); // RIGHT
     auto result_elements = new std::vector<ElementPtr<T>>();
 
-    int i, j;
+    int i = 0, j = 0;
 
-    while (j < actions->size()) {
-        while (i < rebuildingElements->size()) {
+    std::cout << actions->size() << std::endl;
+    std::cout << rebuildingElements->size() << std::endl;
+
+        while (i < rebuildingElements->size() && j < actions->size()) {
             auto element = rebuildingElements->at(i);
             auto action = actions->at(j);
 
@@ -307,11 +318,36 @@ void Tree<T>::rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> 
                 }
                 j++;
             }
+
+	    std::cout << i << " " << j << std::endl;
         }
-    }
+
+	while (i < rebuildingElements->size()) {
+		result_elements->push_back(rebuildingElements->at(i));
+		i++;
+	}
+
+	while (j < actions->size()) {
+		auto action = actions->at(j);
+		if (action->getType() == Insert) {
+                    result_elements->push_back(action->getElement());
+                    res->at(action->getPosition()) = true;
+                } else if (action->getType() == Remove) {
+                    res->at(action->getPosition()) = false;
+                } else if (action->getType() == Contains) {
+                    res->at(action->getPosition()) = false;
+                }
+		j++;
+	}
+
+    std::cout << "end of cycle" << std::endl;
+
+	for (auto e: *result_elements) {
+		std::cout << e->getKey() << std::endl;
+	}
 
     rebuild(result_elements);
-    delete rebuildingElements;
+	delete rebuildingElements;
 }
 
 template <typename T>
@@ -322,13 +358,19 @@ void Tree<T>::rebuild() {
 
 template <typename T>
 void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements) {
-    if (rebuildingElements->empty()) return;
+    std::cout << "here00" << std::endl;
+	
+	if (rebuildingElements->empty()) return;
+    
+    std::cout << "here0" << std::endl;
 
     std::vector<ElementPtr<T>> newRepresentatives;
     int step = floor(sqrt(rebuildingElements->size()));
 
     auto childElements = new std::vector<ElementPtr<T>>();
     m_children.clear();
+
+    std::cout << "here1" << std::endl;
 
     for (int i = 0, j = step / 2; i < rebuildingElements->size(); i++) {
         if (i == j) {
@@ -345,14 +387,17 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements) {
         }
     }
 
+    std::cout << "here2" << std::endl;
+
     auto newChild = std::make_shared<Tree<T>>();
     newChild->rebuild(childElements);
     m_children.push_back(newChild);
-    childElements->clear();
+    delete childElements;
 
     int min = (*rebuildingElements)[0]->getKey();
     int max = (*rebuildingElements)[rebuildingElements->size() - 1]->getKey();
 
+    std::cout << "end" << std::endl;
     m_root = std::make_shared<Node<T>>(newRepresentatives, rebuildingElements->size(), min, max);
 }
 

@@ -203,7 +203,7 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<s
     if (current_child_index >= 0) {
         auto child_results = std::vector<std::tuple<int, int>>(child_indexes.size());
         pasl::pctl::parallel_for(0, child_indexes.size(), [&] (int i) {
-            child_results[i] = m_children[index]->p_execute(child_action_map[child_indexes[i]], sum_v, res);
+            child_results[i] = m_children[child_indexes[i]]->p_execute(child_action_map[child_indexes[i]], sum_v, res);
         });
         for (auto result: child_results) {
             inserted += std::get<0>(result);

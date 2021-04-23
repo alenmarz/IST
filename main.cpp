@@ -89,25 +89,30 @@ void test32() {
     Tree<int> tree;
 
     srand(3);
-    for (int digit = 0; digit < 10000000; digit++) {
+    for (int digit = 0; digit < 10; digit++) {
         if (rand() % 2) {
             tree.insert(std::make_shared<Element<int>>(digit, digit));
         }
     }
 
+	tree.print("");
+
     auto vect = std::make_shared<Actions<int>>();
 
     srand(2);
-    for (int i = 0; i < 10000000; i++) {
+    for (int i = 0; i < 10; i++) {
         int a = rand();
         switch (a % 3) {
             case 0:
+		std::cout << "Insert " << i << std::endl;
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert, i));
                 break;
             case 1:
+		std::cout << "Remove " << i << std::endl;
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove, i));
                 break;
             case 2:
+		std::cout << "Contains " << i << std::endl;
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains, i));
                 break;
         }
@@ -118,6 +123,9 @@ void test32() {
     tree.p_execute(vect);
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
+
+    tree.print("");
+
     std::cout << "exectime: " << elapsed.count() << std::endl;
 }
 

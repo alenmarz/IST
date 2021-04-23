@@ -2,13 +2,14 @@
 #include "Tree.h"
 #include <iostream>
 #include <functional>
-#include "bench.hpp"
-#include "mis.hpp"
-#include "loaders.hpp"
-#include "mis.h"
-#include "datapar.hpp"
 #include <chrono>
 #include <map>
+
+#include <stdlib.h>
+#include "bench.hpp"
+#include "samplesort.hpp"
+#include "loaders.hpp"
+#include "sampleSort.h"
 
 #undef parallel_for
 
@@ -189,7 +190,7 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<s
                 res->at(action->getPosition()) = !marked;
             }
         } else {
-            int index = m_root->getChildIndex(elementPtr->getKey());
+            int index = m_root->getChildIndex(action->getKey());
             if (current_child_index != index) {
                 current_child_index = index;
                 child_indexes.push_back(index);
@@ -201,11 +202,11 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<s
 
     // Параллельная часть
     if (current_child_index >= 0) {
-        auto child_results = std::vector<std::tuple<int, int>>(child_indexes.size());
-        pasl::pctl::parallel_for(0, child_indexes.size(), [&] (int i) {
-            child_results[i] = m_children[child_indexes[i]]->p_execute(child_action_map[child_indexes[i]], sum_v, res);
+        auto child_results = std::make_shared<std::vector<std::tuple<int, int>>>(child_indexes.size());
+        parallel_for(0, static_cast<int>(child_indexes.size()), [&, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res, child_action_map = child_action_map] (int i) {
+            (*child_results)[i] = m_children[child_indexes[i]]->p_execute(child_action_map.at(child_indexes[i]), sum_v, res);
         });
-        for (auto result: child_results) {
+        for (auto result: *child_results) {
             inserted += std::get<0>(result);
             removed += std::get<1>(result);
             m_root->increaseSize(std::get<0>(result) - std::get<1>(result));
@@ -231,8 +232,8 @@ std::shared_ptr<std::vector<int>> build_modifying_sum_vector(ActionsPtr<T> actio
     for (auto action: *actions) {
         if (action->getType() != Contains) {
             current_sum++;
-            sum->push_back(current_sum);
         }
+	sum->push_back(current_sum);
     }
     return std::move(sum);
 }

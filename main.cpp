@@ -89,7 +89,7 @@ void test32() {
     Tree<int> tree;
 
     srand(3);
-    for (int digit = 0; digit < 10; digit++) {
+    for (int digit = 0; digit < 20; digit++) {
         if (rand() % 2) {
             tree.insert(std::make_shared<Element<int>>(digit, digit));
         }
@@ -100,7 +100,7 @@ void test32() {
     auto vect = std::make_shared<Actions<int>>();
 
     srand(2);
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
         int a = rand();
         switch (a % 3) {
             case 0:
@@ -120,13 +120,101 @@ void test32() {
     }
 
     auto start = std::chrono::high_resolution_clock::now();
-    tree.p_execute(vect);
+    auto res = tree.p_execute(vect);
+    for (auto e: *res) {
+	std::cout << e << " ";
+	   }
+    std::cout << std::endl;
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
 
     tree.print("");
 
     std::cout << "exectime: " << elapsed.count() << std::endl;
+}
+
+void test33(int N) {
+
+    Tree<int> tree;
+	Treap<int> treap;
+
+ 	srand(3);
+    for (int digit = 0; digit < N; digit++) {
+        if (rand() % 2) {
+            tree.insert(std::make_shared<Element<int>>(digit, digit));
+	    treap.insert(std::make_shared<Element<int>>(digit, digit));
+        }
+    }
+
+    auto vect = std::make_shared<Actions<int>>();
+    auto vect1 = std::make_shared<Actions<int>>();
+
+    srand(1);
+    for (int i = 0; i < N; i++) {
+        int a = rand();
+        switch (a % 3) {
+            case 0:
+          //      std::cout << "Insert " << i << std::endl;
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert, i));
+                vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert, i));
+		break;
+            case 1:
+            //    std::cout << "Remove " << i << std::endl;
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove, i));
+                vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove, i));
+		break;
+            case 2:
+              //  std::cout << "Contains " << i << std::endl;
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains, i));
+                vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains, i));
+		break;
+        }
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto res = tree.p_execute(vect);
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+
+/*	for (auto e: *res) {
+        	std::cout << e << " ";
+        }
+	*/
+    //std::cout << std::endl;
+
+    //tree.print("");
+    //std::cout << "-------------" << std::endl;
+	std::cout << "exectime (tree): " << elapsed.count() << std::endl;
+    start = std::chrono::high_resolution_clock::now();
+    auto result = treap.p_execute(vect);
+    finish = std::chrono::high_resolution_clock::now();
+    elapsed = finish - start;
+
+    std::cout << "exectime (treap): " << elapsed.count() << std::endl;
+
+//	treap.print("");
+   
+       srand(1);
+    for (int i = 0; i < N; i++) {
+        switch (rand() % 3) {
+            case 0:
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Insert Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
+                }
+                break;
+            case 1:
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Remove Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
+                }
+                break;
+            case 2:
+                if (res->at(i) != result->at(i)) {
+                    std::cout << "Contains Error! " << res->at(i) << " " << result->at(i) << " " << i << std::endl;
+                }
+                break;
+        }
+	rand(); rand();
+    }
 }
 
 void correctnessTest1() {
@@ -391,7 +479,7 @@ void test2() {
 
 int main(int argc, char** argv) {
 	pbbs::launch(argc, argv, [&] (pbbs::measured_type measure) {
-		test32();
+		test33(1000);
 	});
     //correctnessTest1();
     /*auto start = std::chrono::high_resolution_clock::now();

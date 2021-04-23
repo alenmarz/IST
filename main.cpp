@@ -49,11 +49,12 @@ void correctnessTest() {
     }
 }
 
+
 void test31() {
     Treap<int> treap;
 
     srand(3);
-    for (int digit = 0; digit < 1000000; digit++) {
+    for (int digit = 0; digit < 10000000; digit++) {
         if (rand() % 2) {
             treap.insert(std::make_shared<Element<int>>(digit, digit));
         }
@@ -62,7 +63,7 @@ void test31() {
     auto vect = std::make_shared<Actions<int>>();
 
     srand(2);
-    for (int i = 0; i < 1000000; i++) {
+    for (int i = 0; i < 10000000; i++) {
         int a = rand();
         switch (a % 3) {
             case 0:
@@ -345,7 +346,14 @@ void test2() {
 
 
 int main(int argc, char** argv) {
-    test3();
+	pbbs::launch(argc, argv, [&] (pbbs::measured_type measure) {
+//		auto start = std::chrono::system_clock::now();
+//    		test3();
+//		auto end = std::chrono::system_clock::now();
+		test31();
+//	    std::chrono::duration<float> diff = end - start;
+//	    printf ("exectime %.3lf\n", diff.count());
+	});
     //correctnessTest1();
     /*auto start = std::chrono::high_resolution_clock::now();
     fib_seq(100);

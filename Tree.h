@@ -15,6 +15,7 @@ private:
     void helpInsert();
     void helpRemove();
     void rebuild(std::vector<ElementPtr<T>> *rebuildingElements);
+    void rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> res);
     std::vector<ElementPtr<T>> *compoundRebuildingVector();
     std::vector<ElementPtr<T>> *compoundRebuildingVector(std::vector<ElementPtr<T>> *rebuildingElements, int position);
     std::tuple<int, int> p_execute(ActionsPtr<T> actions, std::shared_ptr<std::vector<int>> sum_v, std::shared_ptr<std::vector<bool>> res);
@@ -30,7 +31,6 @@ public:
     bool insert(ElementPtr<T> element);
     bool remove(int key);
     void rebuild();
-    void rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> res);
     bool contains(int key);
     std::shared_ptr<std::vector<bool>> p_execute(ActionsPtr<T> actions);
     ElementPtr<T> search(int key);

@@ -5,6 +5,12 @@ template <typename T>
 Action<T>::Action(ElementPtr<T> element, action_type type) : m_element(std::move(element)), m_type(type) {}
 
 template <typename T>
+Action<T>::Action(ElementPtr<T> element, action_type type, int position)
+    : m_element(std::move(element)),
+    m_type(type),
+    m_position(position) {}
+
+template <typename T>
 action_type Action<T>::getType() {
     return m_type;
 }
@@ -21,6 +27,6 @@ int Action<T>::getKey() {
 
 template <typename T>
 int Action<T>::getPosition() {
-    return m_element->getPosition();
+    return m_position;
 }
 

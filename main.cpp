@@ -85,6 +85,42 @@ void test31() {
     std::cout << "exectime: " << elapsed.count() << std::endl;
 }
 
+void test32() {
+    Tree<int> tree;
+
+    srand(3);
+    for (int digit = 0; digit < 10000000; digit++) {
+        if (rand() % 2) {
+            tree.insert(std::make_shared<Element<int>>(digit, digit));
+        }
+    }
+
+    auto vect = std::make_shared<Actions<int>>();
+
+    srand(2);
+    for (int i = 0; i < 10000000; i++) {
+        int a = rand();
+        switch (a % 3) {
+            case 0:
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert, i));
+                break;
+            case 1:
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove, i));
+                break;
+            case 2:
+                vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains, i));
+                break;
+        }
+        rand();
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    tree.p_execute(vect);
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "exectime: " << elapsed.count() << std::endl;
+}
+
 void correctnessTest1() {
     //std::set<int> set;
 
@@ -347,12 +383,7 @@ void test2() {
 
 int main(int argc, char** argv) {
 	pbbs::launch(argc, argv, [&] (pbbs::measured_type measure) {
-//		auto start = std::chrono::system_clock::now();
-//    		test3();
-//		auto end = std::chrono::system_clock::now();
-		test31();
-//	    std::chrono::duration<float> diff = end - start;
-//	    printf ("exectime %.3lf\n", diff.count());
+		test32();
 	});
     //correctnessTest1();
     /*auto start = std::chrono::high_resolution_clock::now();

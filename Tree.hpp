@@ -151,12 +151,12 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<s
 
     if (!m_children.size()) {
         for (auto action: *actions) {
-            res[action->getPosition()] = false;
+            res->at(action->getPosition()) = false;
         }
         return std::make_tuple(0, 0);
     }
 
-    auto modifying_elem_count = sum_v->at(actions[0]->getPosition()) - sum_v->at(actions[actions->size() - 1]->getPosition());
+    auto modifying_elem_count = sum_v->at(actions->at(0)->getPosition()) - sum_v->at((actions->at(actions->size() - 1))->getPosition());
     if (m_root->isOverflowing(modifying_elem_count)) {
         int old_size = m_root->getSize();
         rebuild(actions, res);
@@ -201,15 +201,15 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<s
 
     // Параллельная часть
     if (current_child_index >= 0) {
-        auto child_results = std::vector<std::tuple<std::shared_ptr<std::vector<bool>>, int, int>>(child_indexes.size());
+        auto child_results = std::vector<std::tuple<int, int>>(child_indexes.size());
         pasl::pctl::parallel_for(0, child_indexes.size(), [&] (int i) {
             child_results[i] = m_children[index]->p_execute(child_action_map[child_indexes[i]], sum_v, res);
         });
         for (auto result: child_results) {
-            inserted += std::get<1>(result);
-            removed += std::get<2>(result);
-            m_root->increaseSize(std::get<1>(result) - std::get<2>(result));
-            m_root->increaseWeight(std::get<1>(result));
+            inserted += std::get<0>(result);
+            removed += std::get<1>(result);
+            m_root->increaseSize(std::get<0>(result) - std::get<1>(result));
+            m_root->increaseWeight(std::get<0>(result));
         }
     }
 
@@ -220,8 +220,8 @@ template <typename T>
 std::shared_ptr<std::vector<bool>> Tree<T>::p_execute(ActionsPtr<T> actions) {
     auto sum_v = build_modifying_sum_vector(actions);
     auto res = std::make_shared<std::vector<bool>>(actions->size());
-    auto result = p_execute(std::move(actions), sum_v, res);
-    return std::move(result);
+    p_execute(actions, sum_v, res);
+    return std::move(res);
 }
 
 template <typename T>

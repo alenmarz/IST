@@ -14,6 +14,7 @@ class Action {
 
 public:
     Action(ElementPtr<T> element, action_type type);
+    Action(ElementPtr<T> element, action_type type, int position);
     ElementPtr<T> getElement();
     action_type getType();
     int getKey();

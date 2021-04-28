@@ -20,7 +20,7 @@ class Node {
 
 public:
     Node();
-    Node(std::vector<ElementPtr<T>> elements, int size);
+    Node(std::vector<ElementPtr<T>> elements, int size, int min, int max);
     int getSize();
     int getWeight();
     int getMin();
@@ -28,14 +28,19 @@ public:
     int getChildIndex(int key);
     std::vector<ElementPtr<T>> getRepresentatives();
     bool isOverflowing();
+    bool isOverflowing(int count);
     bool isAvailableForInsert();
     void increaseCounter();
     void increaseSize();
+    void increaseSize(int n);
     void decreaseSize();
     void increaseWeight();
+    void increaseWeight(int n);
     void insert(ElementPtr<T> element);
     bool remove(int key);
     ElementPtr<T> search(int key);
+    ElementPtr<T> getByIndex(int index);
+    int getNodeSize();
     void print();
 };
 

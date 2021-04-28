@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-double const REBUILD_THRESHOLD = 0.5;
+double const REBUILD_THRESHOLD = 0.2;
 
 template <typename T>
 Node<T>::Node() :
@@ -16,21 +16,24 @@ Node<T>::Node() :
 }
 
 template <typename T>
-Node<T>::Node(std::vector<ElementPtr<T>> elements, int size) :
+Node<T>::Node(std::vector<ElementPtr<T>> elements, int size, int min, int max) :
     m_representatives(elements),
     m_initSize(size),
     m_size(size),
     m_weight(size),
     m_counter(0),
-    m_min(elements.empty() ? 0 : elements[0]->getKey()),
-    m_max(elements.empty() ? 0 : elements[elements.size() - 1]->getKey()) {
+    m_min(min),
+    m_max(max) {
 
-    int ids_size = elements.size();
+    int test = size;
+    int tmp = elements.size();
+    int ids_size = std::max(test, tmp);
+
     m_ids = std::vector<int>(ids_size, 0);
     if (m_max - m_min == 0) return;
 
     for (int i = 0, j = 0; i < ids_size; i++) {
-        int ithSearchPosition = m_min + i * (m_max - m_min) / ids_size;
+        int ithSearchPosition = m_min + 1.0 * i * (m_max - m_min) / ids_size;
         while (j < elements.size() - 1 && ithSearchPosition > elements[j]->getKey()) {
             j++;
         }
@@ -66,11 +69,34 @@ int Node<T>::getChildIndex(int key) {
         childIndex--;
     }
 
-    while (childIndex < m_representatives.size() && key >= m_representatives[childIndex]->getKey()) {
+    while (childIndex < m_representatives.size() && key > m_representatives[childIndex]->getKey()) {
         childIndex++;
     }
 
     return childIndex;
+}
+
+template <typename T>
+ElementPtr<T> Node<T>::search(int key) {
+    if (m_representatives.empty()) return nullptr;
+
+    int index = getStartIndexForSearch(key);
+
+    while (index > 0
+           && (key < m_representatives[index]->getKey())) {
+        index--;
+    }
+
+    while (index < m_representatives.size() - 1
+           && (key > m_representatives[index]->getKey())) {
+        index++;
+    }
+
+    if (m_representatives[index]->getKey() == key) {
+        return m_representatives[index];
+    }
+
+    return nullptr;
 }
 
 template <typename T>
@@ -81,6 +107,11 @@ std::vector<ElementPtr<T>> Node<T>::getRepresentatives() {
 template <typename T>
 bool Node<T>::isOverflowing() {
     return m_counter > m_initSize / REBUILD_THRESHOLD;
+}
+
+template <typename T>
+bool Node<T>::isOverflowing(int count) {
+    return count + m_counter > m_initSize / REBUILD_THRESHOLD;
 }
 
 template <typename T>
@@ -99,6 +130,11 @@ void Node<T>::increaseSize() {
 }
 
 template <typename T>
+void Node<T>::increaseSize(int n) {
+    m_size += n;
+}
+
+template <typename T>
 void Node<T>::decreaseSize() {
     m_size--;
 }
@@ -106,6 +142,11 @@ void Node<T>::decreaseSize() {
 template <typename T>
 void Node<T>::increaseWeight() {
     m_weight++;
+}
+
+template <typename T>
+void Node<T>::increaseWeight(int n) {
+    m_weight += n;
 }
 
 template <typename T>
@@ -142,29 +183,6 @@ bool Node<T>::remove(int key) {
 }
 
 template <typename T>
-ElementPtr<T> Node<T>::search(int key) {
-    if (m_representatives.empty()) return nullptr;
-
-    int index = getStartIndexForSearch(key);
-
-    while (index > 0
-           && (key < m_representatives[index]->getKey() || m_representatives[index]->isMarked())) {
-        index--;
-    }
-
-    while (index < m_representatives.size() - 1
-           && (key > m_representatives[index]->getKey() || m_representatives[index]->isMarked())) {
-        index++;
-    }
-
-    if (m_representatives[index]->getKey() == key && !m_representatives[index]->isMarked()) {
-        return m_representatives[index];
-    }
-
-    return nullptr;
-}
-
-template <typename T>
 void Node<T>::print() {
     for (auto element: m_representatives) {
         char mark = element->isMarked() ? '*' : ' ';
@@ -176,12 +194,27 @@ template <typename T>
 int Node<T>::getStartIndexForSearch(int key) {
     int a = getMin();
     int b = getMax();
-    int idIndex = (b - a) * (key - a) > 0 ? floor((key - a) / (b - a) * m_ids.size()) : 0;
+
+    int idIndex = ((b - a) > 0) && ((key - a) > 0) ? floor(1.0 * (key - a) * m_ids.size() / (b - a)) : 0;
+
+    int last = m_ids.size() - 1;
+    idIndex = std::min(idIndex, last);
 
     int index = 0;
+
     if (!m_ids.empty() && idIndex < m_ids.size()) {
         index = m_ids[idIndex];
     }
 
     return index;
+}
+
+template <typename T>
+ElementPtr<T> Node<T>::getByIndex(int index) {
+    return m_representatives[index];
+}
+
+template <typename T>
+int Node<T>::getNodeSize() {
+    return m_representatives.size();
 }

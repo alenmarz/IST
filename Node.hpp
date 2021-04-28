@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-double const REBUILD_THRESHOLD = 0.5;
+double const REBUILD_THRESHOLD = 0.2;
 
 template <typename T>
 Node<T>::Node() :

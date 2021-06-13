@@ -14,11 +14,11 @@ private:
     bool remove(int key, std::vector<Tree<T>*> *path);
     void helpInsert();
     void helpRemove();
-    void rebuild(std::vector<ElementPtr<T>> *rebuildingElements);
-    void rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> res);
+    void rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start, int end);
+    void rebuild(ActionsPtr<T> actions, int start, int end, std::shared_ptr<std::vector<bool>> res);
     std::vector<ElementPtr<T>> *compoundRebuildingVector();
     std::vector<ElementPtr<T>> *compoundRebuildingVector(std::vector<ElementPtr<T>> *rebuildingElements, int position);
-    std::tuple<int, int> p_execute(ActionsPtr<T> actions, std::shared_ptr<std::vector<int>> sum_v, std::shared_ptr<std::vector<bool>> res);
+    std::tuple<int, int> p_execute(ActionsPtr<T> actions, int start, int end, std::shared_ptr<std::vector<int>> sum_v, std::shared_ptr<std::vector<bool>> res);
     bool updateTreeState();
     void createChildren();
     void increaseSize();

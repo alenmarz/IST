@@ -16,6 +16,13 @@
 using namespace pasl::pctl;
 granularity::control_by_prediction p_exec_tree("p_exec_tree");
 granularity::control_by_prediction p_exec_tree1("p_exec_tree1");
+granularity::control_by_prediction p_exec_tree2("p_exec_tree2");
+granularity::control_by_prediction p_exec_tree3("p_exec_tree3");
+granularity::control_by_prediction p_exec_tree4("p_exec_tree4");
+granularity::control_by_prediction p_exec_tree5("p_exec_tree5");
+granularity::control_by_prediction p_exec_tree6("p_exec_tree6");
+granularity::control_by_prediction p_exec_tree7("p_exec_tree7");
+granularity::control_by_prediction p_exec_tree8("p_exec_tree8");
 
 template <typename T>
 Tree<T>::Tree() :
@@ -145,110 +152,176 @@ bool Tree<T>::contains(int key) {
 }
 
 template <typename T>
-std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, std::shared_ptr<std::vector<int>> sum_v, std::shared_ptr<std::vector<bool>> res) {
+std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, int start, int end, std::shared_ptr<std::vector<int>> sum_v, std::shared_ptr<std::vector<bool>> res) {
     if (actions == nullptr || actions->empty()) {
         return std::make_tuple(0, 0);
     }
 
     int inserted = 0, removed = 0;
 
-    /*if (!m_children.size()) {
-        for (auto action: *actions) {
-            res->at(action->getPosition()) = false;
-        }
-        return std::make_tuple(0, 0);
-    }*/
+    auto first_sum = actions->at(start)->getPosition() > 0 ? sum_v->at(actions->at(start)->getPosition() - 1) : 0;
+    auto modifying_elem_count = sum_v->at((actions->at(end))->getPosition()) - first_sum;
 
-    auto first_sum = actions->at(0)->getPosition() > 0 ? sum_v->at(actions->at(0)->getPosition() - 1) : 0;
-    auto modifying_elem_count = sum_v->at((actions->at(actions->size() - 1))->getPosition()) - first_sum;
-    //std::cout << "modifying_elem_count: " << modifying_elem_count << std::endl;
     if (!m_children.size() || m_root->isOverflowing(modifying_elem_count) || modifying_elem_count > 0 && m_root->getSize() <= 2) {
         int old_size = m_root->getSize();
-        rebuild(actions, res);
+        rebuild(actions, start, end, res);
         return std::make_tuple(0, old_size - m_root->getSize());
     }
 
-    auto current_child_index = -1;
-    auto child_action_map = std::map<int, ActionsPtr<T>>();
-    auto child_indexes = std::vector<int>();
+		auto child_indexes = std::vector<int>(actions->size(), -1);
+		granularity::cstmt(p_exec_tree2, [&] {
+			return end - start + 1;
+		}, [&] {
+			parallel_for(start, end + 1, [&] (int i) {
+				auto action = actions->at(i);
+				ElementPtr<T> elementPtr = m_root->search(action->getElement()->getKey());
+				if (elementPtr) {
+						auto marked = elementPtr->isMarked();
+						if (action->getType() == Insert) {
+								if (marked) {
+										elementPtr->unmark();
+										helpInsert();
+										inserted++;
+								}
+								res->at(action->getPosition()) = marked;
+						} else if (action->getType() == Remove) {
+								if (!marked) {
+										elementPtr->mark();
+										helpRemove();
+										removed++;
+								}
+								res->at(action->getPosition()) = !marked;
+						} else if (action->getType() == Contains) {
+								res->at(action->getPosition()) = !marked;
+						}
+				} else {
+					child_indexes[i] = m_root->getChildIndex(action->getKey());
+				}
+			});
+		}, [&] {
+			for(int i = start; i <= end; i++) {
+				auto action = actions->at(i);
+				ElementPtr<T> elementPtr = m_root->search(action->getElement()->getKey());
+				if (elementPtr) {
+						auto marked = elementPtr->isMarked();
+						if (action->getType() == Insert) {
+								if (marked) {
+										elementPtr->unmark();
+										helpInsert();
+										inserted++;
+								}
+								res->at(action->getPosition()) = marked;
+						} else if (action->getType() == Remove) {
+								if (!marked) {
+										elementPtr->mark();
+										helpRemove();
+										removed++;
+								}
+								res->at(action->getPosition()) = !marked;
+						} else if (action->getType() == Contains) {
+								res->at(action->getPosition()) = !marked;
+						}
+				} else {
+					child_indexes[i] = m_root->getChildIndex(action->getKey());
+				}
+			}
+		});
 
-    for (auto action: *actions) {
-        ElementPtr<T> elementPtr = m_root->search(action->getElement()->getKey());
-        if (elementPtr) {
-            auto marked = elementPtr->isMarked();
-            if (action->getType() == Insert) {
-                if (marked) {
-                    elementPtr->unmark();
-                    helpInsert();
-                    inserted++;
-                }
-                res->at(action->getPosition()) = marked;
-            } else if (action->getType() == Remove) {
-                if (!marked) {
-                    elementPtr->mark();
-                    helpRemove();
-                    removed++;
-                }
-                res->at(action->getPosition()) = !marked;
-            } else if (action->getType() == Contains) {
-                res->at(action->getPosition()) = !marked;
-            }
-        } else {
-            int index = m_root->getChildIndex(action->getKey());
-            if (current_child_index != index) {
-                current_child_index = index;
-                child_indexes.push_back(index);
-                child_action_map[index] = std::make_shared<Actions<int>>();
-            }
-            child_action_map[index]->push_back(action);
-        }
-    }
+		auto starts = std::vector<int>(actions->size(), -1);
+		granularity::cstmt(p_exec_tree3, [&] {
+			return end - start + 1;
+		}, [&] {
+			parallel_for(start, end + 1, [&] (int i) {
+				if (child_indexes[i] != -1 && (i == start ||
+					child_indexes[i] != child_indexes[i - 1]
+				)) {
+					starts[i] = i;
+				}
+			});
+		}, [&] {
+			for(int i = start; i <= end; i++) {
+				if (child_indexes[i] != -1 && (i == start ||
+					child_indexes[i] != child_indexes[i - 1]
+				)) {
+					starts[i] = i;
+				}
+			}
+		});
 
-    auto comp = [&, child_action_map = child_action_map, m_children = m_children, child_indexes = child_indexes] (int i) {
-   	 return child_action_map.at(child_indexes[i])->size() * std::log(std::log(m_children[child_indexes[i]]->getSize()));
+		auto ends = std::vector<int>(actions->size(), -1);
+		granularity::cstmt(p_exec_tree4, [&] {
+			return end - start + 1;
+		}, [&] {
+			parallel_for(start, end + 1, [&] (int i) {
+				if (child_indexes[i] != -1 && (i == end ||
+					child_indexes[i] != child_indexes[i + 1]
+				)) {
+					ends[i] = i;
+				}
+			});
+		}, [&] {
+			for(int i = start; i <= end; i++) {
+				if (child_indexes[i] != -1 && (i == end ||
+					child_indexes[i] != child_indexes[i + 1]
+				)) {
+					ends[i] = i;
+				}
+			}
+		});
+
+		parray<intT> child_pos_start_ = filter(starts.begin() + start, starts.begin() + end + 1, [&] (intT elem) {
+			return elem > -1;
+		});
+
+		parray<intT> child_pos_end_ = filter(ends.begin() + start, ends.begin() + end + 1, [&] (intT elem) {
+			return elem > -1;
+		});
+
+    auto comp = [&, child_pos_start_ = child_pos_start_, child_pos_end_ = child_pos_end_, m_children = m_children, child_indexes = child_indexes] (int i) {
+   	 return (child_pos_start_[i] - child_pos_end_[i] + 1) * std::log(std::log(m_children[child_indexes[child_pos_start_[i]]]->getSize()));
   	};
 
-    // Параллельная часть
-    if (current_child_index >= 0) {
-        auto child_results = std::make_shared<std::vector<std::tuple<int, int>>>(child_indexes.size());
+    if (child_pos_start_.size() > 0) {
+        auto child_results = std::make_shared<std::vector<std::tuple<int, int>>>(child_pos_start_.size());
 
-	    granularity::cstmt(p_exec_tree, [&, actions = actions, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res, child_action_map = child_action_map] {
-            return actions->size() * std::log(std::log(getSize()));
-	    }, [&, actions = actions, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res, child_action_map = child_action_map] {
-            parallel_for(0, static_cast<int>(child_indexes.size()), comp, [&, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res, child_action_map = child_action_map] (int i) {
-                (*child_results)[i] = m_children[child_indexes[i]]->p_execute(child_action_map.at(child_indexes[i]), sum_v, res);
+	    granularity::cstmt(p_exec_tree, [&, actions = actions, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res] {
+            return (end - start + 1) * std::log(std::log(getSize()));
+	    }, [&, child_pos_start_ = child_pos_start_, child_pos_end_ = child_pos_end_, actions = actions, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res] {
+            parallel_for(0, static_cast<int>(child_pos_start_.size()), /*comp,*/ [&, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res] (int i) {
+                (*child_results)[i] = m_children[child_indexes[child_pos_start_[i]]]->p_execute(actions, child_pos_start_[i], child_pos_end_[i], sum_v, res);
             });
-	    }, [&, actions = actions, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res, child_action_map = child_action_map] {
-            for (int i = 0; i < child_indexes.size(); i++) {
-                auto child = m_children[child_indexes[i]];
-                for (auto action: *child_action_map.at(child_indexes[i])) {
-                    bool success;
-                    int cur_inserted, cur_removed;
-                    if (action->getType() == Insert) {
-                        success = child->insert(action->getElement());
-                        cur_inserted = (success ? 1 : 0) + std::get<0>((*child_results)[i]);
-                        cur_removed = std::get<1>((*child_results)[i]);
-                        (*child_results)[i] = std::make_tuple(cur_inserted, cur_removed);
-                    } else if (action->getType() == Remove) {
-                        success = child->remove(action->getElement()->getKey());
-                        cur_inserted = std::get<0>((*child_results)[i]);
-                        cur_removed = (success ? 1 : 0) + std::get<1>((*child_results)[i]);
-                        (*child_results)[i] = std::make_tuple(cur_inserted, cur_removed);
-                    } else if (action->getType() == Contains) {
-                        success = child->contains(action->getElement()->getKey());
-                        (*child_results)[i] = std::make_tuple(0, 0);
-                    }
-                    res->at(action->getPosition()) = success;
+	    }, [&, child_pos_start_ = child_pos_start_, child_pos_end_ = child_pos_end_, actions = actions, child_results = child_results, m_children = m_children, child_indexes = child_indexes, sum_v = sum_v, res = res] {
+            for (int i = 0; i < child_pos_start_.size(); i++) {
+							for (int j = child_pos_start_[i]; j <= child_pos_end_[i]; j++) {
+                auto child = m_children[child_indexes[j]];
+								auto action = actions->at(j);
+                bool success;
+                int cur_inserted, cur_removed;
+                if (action->getType() == Insert) {
+                    success = child->insert(action->getElement());
+                    cur_inserted = (success ? 1 : 0) + std::get<0>((*child_results)[i]);
+                    cur_removed = std::get<1>((*child_results)[i]);
+                    (*child_results)[i] = std::make_tuple(cur_inserted, cur_removed);
+                } else if (action->getType() == Remove) {
+                    success = child->remove(action->getElement()->getKey());
+                    cur_inserted = std::get<0>((*child_results)[i]);
+                    cur_removed = (success ? 1 : 0) + std::get<1>((*child_results)[i]);
+                    (*child_results)[i] = std::make_tuple(cur_inserted, cur_removed);
+                } else if (action->getType() == Contains) {
+                    success = child->contains(action->getElement()->getKey());
+                    (*child_results)[i] = std::make_tuple(0, 0);
                 }
+                res->at(action->getPosition()) = success;
             }
+					}
 	    });
 
-        for (auto result: *child_results) {
-            inserted += std::get<0>(result);
-            removed += std::get<1>(result);
-            m_root->increaseSize(std::get<0>(result) - std::get<1>(result));
-            m_root->increaseWeight(std::get<0>(result));
-        }
+      for (auto result: *child_results) {
+          inserted += std::get<0>(result);
+          removed += std::get<1>(result);
+          m_root->increaseSize(std::get<0>(result) - std::get<1>(result));
+          m_root->increaseWeight(std::get<0>(result));
+      }
     }
 
     return std::make_tuple(inserted, removed);
@@ -259,7 +332,7 @@ std::shared_ptr<std::vector<bool>> Tree<T>::p_execute(ActionsPtr<T> actions) {
     auto sum_v = build_modifying_sum_vector(actions);
     auto res = std::make_shared<std::vector<bool>>(actions->size());
 
-    p_execute(actions, sum_v, res);
+    p_execute(actions, 0, actions->size() - 1, sum_v, res);
     return std::move(res);
 }
 
@@ -306,13 +379,13 @@ void Tree<T>::increaseSize() {
 }
 
 template <typename T>
-void Tree<T>::rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> res) {
+void Tree<T>::rebuild(ActionsPtr<T> actions, int start, int end, std::shared_ptr<std::vector<bool>> res) {
     std::vector<ElementPtr<T>> *rebuildingElements = compoundRebuildingVector();
     auto result_elements = new std::vector<ElementPtr<T>>();
 
-    int i = 0, j = 0;
+    int i = 0, j = start;
 
-    while (i < rebuildingElements->size() && j < actions->size()) {
+    while (i < rebuildingElements->size() && j <= end) {
         auto element = rebuildingElements->at(i);
         auto action = actions->at(j);
 
@@ -351,7 +424,7 @@ void Tree<T>::rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> 
 		i++;
 	}
 
-	while (j < actions->size()) {
+	while (j <= end) {
 		auto action = actions->at(j);
 		if (action->getType() == Insert) {
 		    result_elements->push_back(action->getElement());
@@ -364,74 +437,168 @@ void Tree<T>::rebuild(ActionsPtr<T> actions, std::shared_ptr<std::vector<bool>> 
 		j++;
 	}
 
-    rebuild(result_elements);
+	rebuild(result_elements, 0, result_elements->size() - 1);
 	delete rebuildingElements;
 }
 
 template <typename T>
 void Tree<T>::rebuild() {
     std::vector<ElementPtr<T>> *rebuildingElements = compoundRebuildingVector(); // RIGHT
-    rebuild(rebuildingElements);
+    rebuild(rebuildingElements, 0, rebuildingElements->size() - 1);
 }
 
 template <typename T>
-void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements) {
-	if (rebuildingElements->empty()) return;
-    
-    std::vector<ElementPtr<T>> newRepresentatives;
-    int step = floor(sqrt(rebuildingElements->size()));
+void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start, int end) {
+		if (rebuildingElements->empty()) return;
 
-    auto childElements2 = std::make_shared<std::vector<std::vector<ElementPtr<T>>*>>();
+    int step = floor(sqrt(end - start + 1));
 
     m_children.clear();
-    childElements2->push_back(new std::vector<ElementPtr<T>>());
-    int child_id = 0;
 
-    for (int i = 0, j = step / 2; i < rebuildingElements->size(); i++) {
-        if (i == j) {
-            newRepresentatives.push_back((*rebuildingElements)[i]);
+		if (end - start + 1 <= 3) {
+			auto newRepresentatives = std::vector<ElementPtr<T>>(end - start + 1);
 
-		    child_id++;
-		    childElements2->push_back(new std::vector<ElementPtr<T>>());
+			for (int i = 0; i < end - start + 1; i++) {
+				m_children.push_back(std::make_shared<Tree<T>>());
+				newRepresentatives[i] = (*rebuildingElements)[start + i];
+			}
+			m_children.push_back(std::make_shared<Tree<T>>());
 
-            j += step;
-        } else {
-		    (*childElements2)[child_id]->push_back((*rebuildingElements)[i]);
-        }
-    }
+			int min = (*rebuildingElements)[start]->getKey();
+			int max = (*rebuildingElements)[end]->getKey();
 
-    auto children_tmp = std::make_shared<std::vector<TreePtr<T>>>(childElements2->size());
+			m_root = std::make_shared<Node<T>>(newRepresentatives, end - start + 1, min, max);
 
-    auto comp = [&, childElements2 = childElements2] (int i) {
-         return (*childElements2)[i]->size();
-	};
+			return;
+		}
 
-    granularity::cstmt(p_exec_tree1, [&, rebuildingElements = rebuildingElements, childElements2 = childElements2] {
-        return rebuildingElements->size() * childElements2->size();
-    }, [&, childElements2 = childElements2] {
-        parallel_for(0, static_cast<int>(childElements2->size()), comp, [&, childElements2 = childElements2] (int i) {
-            auto newChild = std::make_shared<Tree<T>>();
-            newChild->rebuild((*childElements2)[i]);
-            delete (*childElements2)[i];
-            (*children_tmp)[i] = newChild;
-        });
-    }, [&, childElements2 = childElements2] {
-        for (int i = 0; i < childElements2->size(); i++) {
-            auto newChild = std::make_shared<Tree<T>>();
-            newChild->rebuild((*childElements2)[i]);
-            delete (*childElements2)[i];
-            (*children_tmp)[i] = newChild;
-        }
-    });
+		auto flag_start = false;
+		auto flag_end = false;
 
-	for (auto child: *children_tmp) {
-		m_children.push_back(child);
-	}
+		auto y = std::vector<int>(rebuildingElements->size(), -1);
+		granularity::cstmt(p_exec_tree7, [&] {
+			return end - start + 1;
+		}, [&] {
+			parallel_for(start, end + 1, [&] (int i) {
+				if (start == end || i == start + step / 2 || i >= start + step / 2 && (i - start - step / 2) % step == 0) {
+					y[i] = -1 * i - 1;
+					flag_start = (i == start);
+					flag_end = (i == end);
+				} else {
+					y[i] = i;
+				}
+			});
+		}, [&] {
+			for (int i = start; i < end + 1; i++) {
+				if (start == end || i == start + step / 2 || i >= start + step / 2 && (i - start - step / 2) % step == 0) {
+					y[i] = -1 * i - 1;
+					flag_start = (i == start);
+					flag_end = (i == end);
+				} else {
+					y[i] = i;
+				}
+			}
+		});
 
-    int min = (*rebuildingElements)[0]->getKey();
-    int max = (*rebuildingElements)[rebuildingElements->size() - 1]->getKey();
+		parray<intT> newRepresentativesIds = filter(y.begin() + start, y.begin() + end + 1, [&] (intT elem) {
+			return elem < 0;
+		});
 
-    m_root = std::make_shared<Node<T>>(newRepresentatives, rebuildingElements->size(), min, max);
+		auto newRepresentatives = std::vector<ElementPtr<T>>(newRepresentativesIds.size());
+		granularity::cstmt(p_exec_tree8, [&] {
+			return end - start + 1;
+		}, [&] {
+			parallel_for(0, static_cast<int>(newRepresentativesIds.size()), [&] (int i) {
+				newRepresentatives[i] = (*rebuildingElements)[(-1 * (newRepresentativesIds[i] + 1))];
+			});
+		}, [&] {
+			for (int i = 0; i < newRepresentativesIds.size(); i++) {
+				newRepresentatives[i] = (*rebuildingElements)[(-1 * (newRepresentativesIds[i] + 1))];
+			}
+		});
+
+		auto starts = std::vector<int>(rebuildingElements->size(), -1);
+		granularity::cstmt(p_exec_tree5, [&] {
+			return end - start + 1;
+		}, [&] {
+			parallel_for(start, end + 1, [&] (int i) {
+				if (y[i] >= 0 && (i == start ||
+					y[i - 1] < 0
+				)) {
+					starts[i] = i;
+				}
+			});
+		}, [&] {
+			for(int i = start; i <= end; i++) {
+				if (y[i] >= 0 && (i == start ||
+					y[i - 1] < 0
+				)) {
+					starts[i] = i;
+				}
+			}
+		});
+
+		auto ends = std::vector<int>(rebuildingElements->size(), -1);
+		granularity::cstmt(p_exec_tree6, [&] {
+			return end - start + 1;
+		}, [&] {
+			parallel_for(start, end + 1, [&] (int i) {
+				if (y[i] >= 0 && (i == end ||
+					y[i + 1] < 0
+				)) {
+					ends[i] = i;
+				}
+			});
+		}, [&] {
+			for(int i = start; i <= end; i++) {
+				if (y[i] >= 0 && (i == end ||
+					y[i + 1] < 0
+				)) {
+					ends[i] = i;
+				}
+			}
+		});
+
+		parray<intT> child_pos_start_ = filter(starts.begin() + start, starts.begin() + end + 1, [&] (intT elem) {
+			return elem > -1;
+		});
+
+		parray<intT> child_pos_end_ = filter(ends.begin() + start, ends.begin() + end + 1, [&] (intT elem) {
+			return elem > -1;
+		});
+
+		if (flag_start) m_children.push_back(std::make_shared<Tree<T>>());
+
+		if (child_pos_start_.size() > 0) {
+			auto children_tmp = std::make_shared<std::vector<TreePtr<T>>>(child_pos_start_.size());
+
+			granularity::cstmt(p_exec_tree1, [&, rebuildingElements = rebuildingElements] {
+	        return (end - start + 1) * child_pos_start_.size();
+	    }, [&] {
+	        parallel_for(0, static_cast<int>(child_pos_start_.size()), /*comp,*/ [&] (int i) {
+	            auto newChild = std::make_shared<Tree<T>>();
+	            newChild->rebuild(rebuildingElements, child_pos_start_[i], child_pos_end_[i]);
+	            (*children_tmp)[i] = newChild;
+	        });
+	    }, [&] {
+	        for (int i = 0; i < child_pos_start_.size(); i++) {
+	            auto newChild = std::make_shared<Tree<T>>();
+	            newChild->rebuild(rebuildingElements, child_pos_start_[i], child_pos_end_[i]);
+	            (*children_tmp)[i] = newChild;
+	        }
+	    });
+
+			for (auto child: *children_tmp) {
+				m_children.push_back(child);
+			}
+		}
+
+		if (flag_end) m_children.push_back(std::make_shared<Tree<T>>());
+
+    int min = (*rebuildingElements)[start]->getKey();
+    int max = (*rebuildingElements)[end]->getKey();
+
+    m_root = std::make_shared<Node<T>>(newRepresentatives, end - start + 1, min, max);
 }
 
 template <typename T>

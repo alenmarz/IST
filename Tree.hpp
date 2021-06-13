@@ -228,31 +228,17 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, int start, int en
 		});
 
 		auto starts = std::vector<int>(actions->size(), -1);
-		granularity::cstmt(p_exec_tree3, [&] {
-			return end - start + 1;
-		}, [&] {
-			parallel_for(start, end + 1, [&] (int i) {
-				if (child_indexes[i] != -1 && (i == start ||
-					child_indexes[i] != child_indexes[i - 1]
-				)) {
-					starts[i] = i;
-				}
-			});
-		}, [&] {
-			for(int i = start; i <= end; i++) {
-				if (child_indexes[i] != -1 && (i == start ||
-					child_indexes[i] != child_indexes[i - 1]
-				)) {
-					starts[i] = i;
-				}
-			}
-		});
-
 		auto ends = std::vector<int>(actions->size(), -1);
 		granularity::cstmt(p_exec_tree4, [&] {
 			return end - start + 1;
 		}, [&] {
 			parallel_for(start, end + 1, [&] (int i) {
+				if (child_indexes[i] != -1 && (i == start ||
+					child_indexes[i] != child_indexes[i - 1]
+				)) {
+					starts[i] = i;
+				}
+
 				if (child_indexes[i] != -1 && (i == end ||
 					child_indexes[i] != child_indexes[i + 1]
 				)) {
@@ -261,6 +247,12 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, int start, int en
 			});
 		}, [&] {
 			for(int i = start; i <= end; i++) {
+				if (child_indexes[i] != -1 && (i == start ||
+					child_indexes[i] != child_indexes[i - 1]
+				)) {
+					starts[i] = i;
+				}
+
 				if (child_indexes[i] != -1 && (i == end ||
 					child_indexes[i] != child_indexes[i + 1]
 				)) {
@@ -518,31 +510,18 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start,
 		});
 
 		auto starts = std::vector<int>(rebuildingElements->size(), -1);
-		granularity::cstmt(p_exec_tree5, [&] {
-			return end - start + 1;
-		}, [&] {
-			parallel_for(start, end + 1, [&] (int i) {
-				if (y[i] >= 0 && (i == start ||
-					y[i - 1] < 0
-				)) {
-					starts[i] = i;
-				}
-			});
-		}, [&] {
-			for(int i = start; i <= end; i++) {
-				if (y[i] >= 0 && (i == start ||
-					y[i - 1] < 0
-				)) {
-					starts[i] = i;
-				}
-			}
-		});
-
 		auto ends = std::vector<int>(rebuildingElements->size(), -1);
+
 		granularity::cstmt(p_exec_tree6, [&] {
 			return end - start + 1;
 		}, [&] {
 			parallel_for(start, end + 1, [&] (int i) {
+				if (y[i] >= 0 && (i == start ||
+					y[i - 1] < 0
+				)) {
+					starts[i] = i;
+				}
+
 				if (y[i] >= 0 && (i == end ||
 					y[i + 1] < 0
 				)) {
@@ -551,6 +530,12 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start,
 			});
 		}, [&] {
 			for(int i = start; i <= end; i++) {
+				if (y[i] >= 0 && (i == start ||
+					y[i - 1] < 0
+				)) {
+					starts[i] = i;
+				}
+
 				if (y[i] >= 0 && (i == end ||
 					y[i + 1] < 0
 				)) {

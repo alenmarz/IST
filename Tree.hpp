@@ -136,6 +136,9 @@ template <typename T> bool Tree<T>::contains(int key) {
 template <typename T>
 std::tuple<int, int>
 Tree<T>::p_execute(ActionsPtr<T> actions, int start, int end,
+                   std::shared_ptr<std::vector<int>> child_indexes,
+                   std::shared_ptr<std::vector<int>> starts,
+                   std::shared_ptr<std::vector<int>> ends,
                    std::shared_ptr<std::vector<int>> sum_v,
                    std::shared_ptr<std::vector<bool>> res) {
   if (actions == nullptr || actions->empty()) {
@@ -157,7 +160,6 @@ Tree<T>::p_execute(ActionsPtr<T> actions, int start, int end,
     return std::make_tuple(0, old_size - m_root->getSize());
   }
 
-  auto child_indexes = std::vector<int>(actions->size(), -1);
   parallel_for(start, end + 1, [&](int i) {
     auto action = actions->at(i);
     ElementPtr<T> elementPtr = m_root->search(action->getElement()->getKey());
@@ -180,31 +182,34 @@ Tree<T>::p_execute(ActionsPtr<T> actions, int start, int end,
       } else if (action->getType() == Contains) {
         res->at(action->getPosition()) = !marked;
       }
+      child_indexes->at(i) = -1;
     } else {
-      child_indexes[i] = m_root->getChildIndex(action->getKey());
+      child_indexes->at(i) = m_root->getChildIndex(action->getKey());
     }
   });
 
-  auto starts = std::vector<int>(actions->size(), -1);
-  auto ends = std::vector<int>(actions->size(), -1);
   parallel_for(start, end + 1, [&](int i) {
-    if (child_indexes[i] != -1 &&
-        (i == start || child_indexes[i] != child_indexes[i - 1])) {
-      starts[i] = i;
+    if (child_indexes->at(i) != -1 &&
+        (i == start || child_indexes->at(i) != child_indexes->at(i - 1))) {
+      starts->at(i) = i;
+    } else {
+      starts->at(i) = -1;
     }
 
-    if (child_indexes[i] != -1 &&
-        (i == end || child_indexes[i] != child_indexes[i + 1])) {
-      ends[i] = i;
+    if (child_indexes->at(i) != -1 &&
+        (i == end || child_indexes->at(i) != child_indexes->at(i + 1))) {
+      ends->at(i) = i;
+    } else {
+      ends->at(i) = -1;
     }
   });
 
   parray<intT> child_pos_start_ =
-      filter(starts.begin() + start, starts.begin() + end + 1,
+      filter(starts->begin() + start, starts->begin() + end + 1,
              [&](intT elem) { return elem > -1; });
 
   parray<intT> child_pos_end_ =
-      filter(ends.begin() + start, ends.begin() + end + 1,
+      filter(ends->begin() + start, ends->begin() + end + 1,
              [&](intT elem) { return elem > -1; });
 
   auto comp = [&, child_pos_start_ = child_pos_start_,
@@ -212,7 +217,7 @@ Tree<T>::p_execute(ActionsPtr<T> actions, int start, int end,
                child_indexes = child_indexes](int i) {
     return (child_pos_start_[i] - child_pos_end_[i] + 1) *
            std::log(std::log(
-               m_children[child_indexes[child_pos_start_[i]]]->getSize()));
+               m_children[child_indexes->at(child_pos_start_[i])]->getSize()));
   };
 
   if (child_pos_start_.size() > 0) {
@@ -230,23 +235,25 @@ Tree<T>::p_execute(ActionsPtr<T> actions, int start, int end,
          child_pos_end_ = child_pos_end_, actions = actions,
          child_results = child_results, m_children = m_children,
          child_indexes = child_indexes, sum_v = sum_v, res = res] {
-          parallel_for(
-              0, static_cast<int>(child_pos_start_.size()), /*comp,*/
-              [&, child_results = child_results, m_children = m_children,
-               child_indexes = child_indexes, sum_v = sum_v, res = res](int i) {
-                (*child_results)[i] =
-                    m_children[child_indexes[child_pos_start_[i]]]->p_execute(
-                        actions, child_pos_start_[i], child_pos_end_[i], sum_v,
-                        res);
-              });
+          parallel_for(0, static_cast<int>(child_pos_start_.size()), /*comp,*/
+                       [&, child_results = child_results,
+                        m_children = m_children, child_indexes = child_indexes,
+                        sum_v = sum_v, res = res](int i) {
+                         (*child_results)[i] =
+                             m_children[child_indexes->at(child_pos_start_[i])]
+                                 ->p_execute(actions, child_pos_start_[i],
+                                             child_pos_end_[i], child_indexes,
+                                             starts, ends, sum_v, res);
+                       });
         },
         [&, child_pos_start_ = child_pos_start_,
          child_pos_end_ = child_pos_end_, actions = actions,
          child_results = child_results, m_children = m_children,
          child_indexes = child_indexes, sum_v = sum_v, res = res] {
+          // TODO!
           for (int i = 0; i < child_pos_start_.size(); i++) {
             for (int j = child_pos_start_[i]; j <= child_pos_end_[i]; j++) {
-              auto child = m_children[child_indexes[j]];
+              auto child = m_children[child_indexes->at(j)];
               auto action = actions->at(j);
               bool success;
               int cur_inserted, cur_removed;
@@ -289,7 +296,11 @@ std::shared_ptr<std::vector<bool>> Tree<T>::p_execute(ActionsPtr<T> actions) {
   auto sum_v = build_modifying_sum_vector(actions);
   auto res = std::make_shared<std::vector<bool>>(actions->size());
 
-  p_execute(actions, 0, actions->size() - 1, sum_v, res);
+  auto child_indexes = std::make_shared<std::vector<int>>(actions->size(), -1);
+  auto starts = std::make_shared<std::vector<int>>(actions->size(), -1);
+  auto ends = std::make_shared<std::vector<int>>(actions->size(), -1);
+  p_execute(actions, 0, actions->size() - 1, child_indexes, starts, ends, sum_v,
+            res);
   return std::move(res);
 }
 
@@ -391,19 +402,32 @@ void Tree<T>::rebuild(ActionsPtr<T> actions, int start, int end,
     j++;
   }
 
-  rebuild(result_elements, 0, result_elements->size() - 1);
+  auto y = std::make_shared<std::vector<int>>(result_elements->size(), -1);
+  auto starts =
+      std::make_shared<std::vector<int>>(result_elements->size(), -1);
+  auto ends =
+      std::make_shared<std::vector<int>>(result_elements->size(), -1);
+
+  rebuild(result_elements, 0, result_elements->size() - 1, y, starts, ends);
   delete rebuildingElements;
 }
 
 template <typename T> void Tree<T>::rebuild() {
-  std::vector<ElementPtr<T>> *rebuildingElements =
-      compoundRebuildingVector(); // RIGHT
-  rebuild(rebuildingElements, 0, rebuildingElements->size() - 1);
+  std::vector<ElementPtr<T>> *rebuildingElements = compoundRebuildingVector();
+  auto y = std::make_shared<std::vector<int>>(rebuildingElements->size(), -1);
+  auto starts =
+      std::make_shared<std::vector<int>>(rebuildingElements->size(), -1);
+  auto ends =
+      std::make_shared<std::vector<int>>(rebuildingElements->size(), -1);
+  rebuild(rebuildingElements, 0, rebuildingElements->size() - 1, y, starts,
+          ends);
 }
 
 template <typename T>
 void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start,
-                      int end) {
+                      int end, std::shared_ptr<std::vector<int>> y,
+                      std::shared_ptr<std::vector<int>> starts,
+                      std::shared_ptr<std::vector<int>> ends) {
   if (rebuildingElements->empty())
     return;
 
@@ -432,48 +456,49 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start,
   auto flag_start = false;
   auto flag_end = false;
 
-  auto y = std::vector<int>(rebuildingElements->size(), -1);
   parallel_for(start, end + 1, [&](int i) {
     if (start == end || i == start + step / 2 ||
         i >= start + step / 2 && (i - start - step / 2) % step == 0) {
-      y[i] = -1 * i - 1;
+      y->at(i) = -1 * i - 1;
       flag_start = (i == start);
       flag_end = (i == end);
     } else {
-      y[i] = i;
+      y->at(i) = i;
     }
   });
 
   parray<intT> newRepresentativesIds =
-      filter(y.begin() + start, y.begin() + end + 1,
+      filter(y->begin() + start, y->begin() + end + 1,
              [&](intT elem) { return elem < 0; });
 
   auto newRepresentatives =
       std::vector<ElementPtr<T>>(newRepresentativesIds.size());
+
   parallel_for(0, static_cast<int>(newRepresentativesIds.size()), [&](int i) {
     newRepresentatives[i] =
         (*rebuildingElements)[(-1 * (newRepresentativesIds[i] + 1))];
   });
 
-  auto starts = std::vector<int>(rebuildingElements->size(), -1);
-  auto ends = std::vector<int>(rebuildingElements->size(), -1);
-
   parallel_for(start, end + 1, [&](int i) {
-    if (y[i] >= 0 && (i == start || y[i - 1] < 0)) {
-      starts[i] = i;
+    if (y->at(i) >= 0 && (i == start || y->at(i - 1) < 0)) {
+      starts->at(i) = i;
+    } else {
+      starts->at(i) = -1;
     }
 
-    if (y[i] >= 0 && (i == end || y[i + 1] < 0)) {
-      ends[i] = i;
+    if (y->at(i) >= 0 && (i == end || y->at(i + 1) < 0)) {
+      ends->at(i) = i;
+    } else {
+      ends->at(i) = -1;
     }
   });
 
   parray<intT> child_pos_start_ =
-      filter(starts.begin() + start, starts.begin() + end + 1,
+      filter(starts->begin() + start, starts->begin() + end + 1,
              [&](intT elem) { return elem > -1; });
 
   parray<intT> child_pos_end_ =
-      filter(ends.begin() + start, ends.begin() + end + 1,
+      filter(ends->begin() + start, ends->begin() + end + 1,
              [&](intT elem) { return elem > -1; });
 
   if (flag_start)
@@ -487,7 +512,7 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start,
                  /*comp,*/ [&](int i) {
                    auto newChild = std::make_shared<Tree<T>>();
                    newChild->rebuild(rebuildingElements, child_pos_start_[i],
-                                     child_pos_end_[i]);
+                                     child_pos_end_[i], y, starts, ends);
                    (*children_tmp)[i] = newChild;
                  });
 

@@ -9,6 +9,12 @@
 #include "Tree.h"
 #include <time.h>
 
+#include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
+
+#undef parallel_for
+using namespace pasl::pctl;
+
 void correctnessTest() {
     std::set<int> set;
     Tree<int> tree;
@@ -133,48 +139,81 @@ void test32() {
     std::cout << "exectime: " << elapsed.count() << std::endl;
 }
 
-void test33(int N) {
+void test33(int N, int M) {
 
     Tree<int> tree;
-	Treap<int> treap;
+		//Tree<int> tree1;
+	//Treap<int> treap;
+
+	auto vect1 = std::make_shared<Actions<int>>();
 
  	srand(3);
+		int i = 0;
     for (int digit = 0; digit < N; digit++) {
         if (rand() % 2) {
-            tree.insert(std::make_shared<Element<int>>(digit, digit));
-	    treap.insert(std::make_shared<Element<int>>(digit, digit));
+						vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(digit, digit), Insert, i));
+						i++;
+            //tree.insert(std::make_shared<Element<int>>(digit, digit));
+						//tree1.insert(std::make_shared<Element<int>>(digit, digit));
+            //treap.insert(std::make_shared<Element<int>>(digit, digit));
         }
     }
 
+		tree.p_execute(vect1);
+		//tree.rebuild();
+
     auto vect = std::make_shared<Actions<int>>();
-    auto vect1 = std::make_shared<Actions<int>>();
+    //auto vect1 = std::make_shared<Actions<int>>();
+
+		//tree.print("");
 
     srand(1);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < M; i++) {
         int a = rand();
         switch (a % 3) {
             case 0:
-          //      std::cout << "Insert " << i << std::endl;
+                //std::cout << "Insert " << i << std::endl;
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert, i));
-                vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert, i));
+                //vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Insert, i));
 		break;
             case 1:
-            //    std::cout << "Remove " << i << std::endl;
+                //std::cout << "Remove " << i << std::endl;
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove, i));
-                vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove, i));
+                //vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Remove, i));
 		break;
             case 2:
-              //  std::cout << "Contains " << i << std::endl;
+                //std::cout << "Contains " << i << std::endl;
                 vect->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains, i));
-                vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains, i));
+                //vect1->push_back(std::make_shared<Action<int>>(std::make_shared<Element<int>>(i, i), Contains, i));
 		break;
         }
     }
 
+/*
     auto start = std::chrono::high_resolution_clock::now();
-    auto res = tree.p_execute(vect);
+		for (int i = 0; i < M; i++) {
+			auto action = vect->at(i);
+			if (action->getType() == Insert) {
+				tree1.insert(action->getElement());
+			} else if (action->getType() == Remove) {
+				tree1.remove(action->getElement()->getKey());
+			} else if (action->getType() == Contains) {
+				tree1.contains(action->getElement()->getKey());
+			}
+		}
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
+		std::cout << "exectime (seq tree): " << elapsed.count() << std::endl;
+*/
+
+		auto start = std::chrono::high_resolution_clock::now();
+    tree.p_execute(vect);
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+		std::cout << "exectime (par tree): " << elapsed.count() << std::endl;
+
+
+		//tree.print("");
 
 /*	for (auto e: *res) {
         	std::cout << e << " ";
@@ -184,16 +223,18 @@ void test33(int N) {
 
     //tree.print("");
     //std::cout << "-------------" << std::endl;
-	std::cout << "exectime (tree): " << elapsed.count() << std::endl;
+
+/*
     start = std::chrono::high_resolution_clock::now();
     auto result = treap.p_execute(vect);
     finish = std::chrono::high_resolution_clock::now();
     elapsed = finish - start;
 
     std::cout << "exectime (treap): " << elapsed.count() << std::endl;
+*/
 
 //	treap.print("");
-   
+  /*
        srand(1);
     for (int i = 0; i < N; i++) {
         switch (rand() % 3) {
@@ -214,7 +255,7 @@ void test33(int N) {
                 break;
         }
 	rand(); rand();
-    }
+    }*/
 }
 
 void correctnessTest1() {
@@ -476,20 +517,24 @@ void test2() {
     std::cout << "Time for treap: " << elapsed.count() << std::endl;
 }
 
+void cilk_test(unsigned long long N, unsigned long long BLOCK) {
+	vector<int> a;
+	for (unsigned long long i = 0; i < N; i++) {
+		a.push_back(1);
+	}
+	auto start = std::chrono::high_resolution_clock::now();
+
+	parallel_for(0, static_cast<int>(N), [&] (int i) {
+		a[i] = a[i] + 1;
+	});
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed = finish - start;
+	std::cout << "Time: " << elapsed.count() << std::endl;
+}
 
 int main(int argc, char** argv) {
-	pbbs::launch(argc, argv, [&] (pbbs::measured_type measure) {
-		test33(1000);
-	});
-    //correctnessTest1();
-    /*auto start = std::chrono::high_resolution_clock::now();
-    fib_seq(100);
-    auto finish = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = finish - start;
-    std::cout << "Time for seq: " << elapsed.count() << std::endl;
-    start = std::chrono::high_resolution_clock::now();
-    finish = std::chrono::high_resolution_clock::now();
-    elapsed = finish - start;
-    std::cout << "Time for par: " << elapsed.count() << std::endl;*/
-    return 0;
+		pbbs::launch(argc, argv, [&] (pbbs::measured_type measure) {
+			test33(50000000, 5000000);
+		});
+		return 0;
 }

@@ -15,14 +15,6 @@
 
 using namespace pasl::pctl;
 granularity::control_by_prediction p_exec_tree("p_exec_tree");
-granularity::control_by_prediction p_exec_tree1("p_exec_tree1");
-granularity::control_by_prediction p_exec_tree2("p_exec_tree2");
-granularity::control_by_prediction p_exec_tree3("p_exec_tree3");
-granularity::control_by_prediction p_exec_tree4("p_exec_tree4");
-granularity::control_by_prediction p_exec_tree5("p_exec_tree5");
-granularity::control_by_prediction p_exec_tree6("p_exec_tree6");
-granularity::control_by_prediction p_exec_tree7("p_exec_tree7");
-granularity::control_by_prediction p_exec_tree8("p_exec_tree8");
 
 template <typename T> Tree<T>::Tree() : m_root(std::make_shared<Node<T>>()) {}
 
@@ -35,11 +27,9 @@ Tree<T>::Tree(std::vector<ElementPtr<T>> elements)
   }
 }
 
-template <typename T>
-int Tree<T>::getSize() { return m_root->getSize(); }
+template <typename T> int Tree<T>::getSize() { return m_root->getSize(); }
 
-template <typename T>
-int Tree<T>::getWeight() { return m_root->getWeight(); }
+template <typename T> int Tree<T>::getWeight() { return m_root->getWeight(); }
 
 template <typename T>
 bool Tree<T>::insert(ElementPtr<T> element, std::vector<Tree<T> *> *path) {
@@ -85,8 +75,7 @@ bool Tree<T>::insert(ElementPtr<T> element, std::vector<Tree<T> *> *path) {
   return true;
 }
 
-template <typename T>
-bool Tree<T>::insert(ElementPtr<T> element) {
+template <typename T> bool Tree<T>::insert(ElementPtr<T> element) {
   return insert(element, new std::vector<Tree<T> *>());
 }
 
@@ -115,13 +104,11 @@ bool Tree<T>::remove(int key, std::vector<Tree<T> *> *path) {
   return isElementDeleted;
 }
 
-template <typename T>
-bool Tree<T>::remove(int key) {
+template <typename T> bool Tree<T>::remove(int key) {
   return remove(key, new std::vector<Tree<T> *>());
 }
 
-template <typename T>
-ElementPtr<T> Tree<T>::search(int key) {
+template <typename T> ElementPtr<T> Tree<T>::search(int key) {
   int index = m_root->getChildIndex(key);
 
   ElementPtr<T> elementPtr =
@@ -141,14 +128,14 @@ ElementPtr<T> Tree<T>::search(int key) {
   return elementPtr;
 }
 
-template <typename T>
-bool Tree<T>::contains(int key) {
+template <typename T> bool Tree<T>::contains(int key) {
   ElementPtr<T> a = search(key);
   return a != nullptr;
 }
 
 template <typename T>
-std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, int start, int end,
+std::tuple<int, int>
+Tree<T>::p_execute(ActionsPtr<T> actions, int start, int end,
                    std::shared_ptr<std::vector<int>> sum_v,
                    std::shared_ptr<std::vector<bool>> res) {
   if (actions == nullptr || actions->empty()) {
@@ -171,97 +158,46 @@ std::tuple<int, int> Tree<T>::p_execute(ActionsPtr<T> actions, int start, int en
   }
 
   auto child_indexes = std::vector<int>(actions->size(), -1);
-  granularity::cstmt(
-      p_exec_tree2, [&] { return end - start + 1; },
-      [&] {
-        parallel_for(start, end + 1, [&](int i) {
-          auto action = actions->at(i);
-          ElementPtr<T> elementPtr =
-              m_root->search(action->getElement()->getKey());
-          if (elementPtr) {
-            auto marked = elementPtr->isMarked();
-            if (action->getType() == Insert) {
-              if (marked) {
-                elementPtr->unmark();
-                helpInsert();
-                inserted++;
-              }
-              res->at(action->getPosition()) = marked;
-            } else if (action->getType() == Remove) {
-              if (!marked) {
-                elementPtr->mark();
-                helpRemove();
-                removed++;
-              }
-              res->at(action->getPosition()) = !marked;
-            } else if (action->getType() == Contains) {
-              res->at(action->getPosition()) = !marked;
-            }
-          } else {
-            child_indexes[i] = m_root->getChildIndex(action->getKey());
-          }
-        });
-      },
-      [&] {
-        for (int i = start; i <= end; i++) {
-          auto action = actions->at(i);
-          ElementPtr<T> elementPtr =
-              m_root->search(action->getElement()->getKey());
-          if (elementPtr) {
-            auto marked = elementPtr->isMarked();
-            if (action->getType() == Insert) {
-              if (marked) {
-                elementPtr->unmark();
-                helpInsert();
-                inserted++;
-              }
-              res->at(action->getPosition()) = marked;
-            } else if (action->getType() == Remove) {
-              if (!marked) {
-                elementPtr->mark();
-                helpRemove();
-                removed++;
-              }
-              res->at(action->getPosition()) = !marked;
-            } else if (action->getType() == Contains) {
-              res->at(action->getPosition()) = !marked;
-            }
-          } else {
-            child_indexes[i] = m_root->getChildIndex(action->getKey());
-          }
+  parallel_for(start, end + 1, [&](int i) {
+    auto action = actions->at(i);
+    ElementPtr<T> elementPtr = m_root->search(action->getElement()->getKey());
+    if (elementPtr) {
+      auto marked = elementPtr->isMarked();
+      if (action->getType() == Insert) {
+        if (marked) {
+          elementPtr->unmark();
+          helpInsert();
+          inserted++;
         }
-      });
+        res->at(action->getPosition()) = marked;
+      } else if (action->getType() == Remove) {
+        if (!marked) {
+          elementPtr->mark();
+          helpRemove();
+          removed++;
+        }
+        res->at(action->getPosition()) = !marked;
+      } else if (action->getType() == Contains) {
+        res->at(action->getPosition()) = !marked;
+      }
+    } else {
+      child_indexes[i] = m_root->getChildIndex(action->getKey());
+    }
+  });
 
   auto starts = std::vector<int>(actions->size(), -1);
   auto ends = std::vector<int>(actions->size(), -1);
-  granularity::cstmt(
-      p_exec_tree4, [&] { return end - start + 1; },
-      [&] {
-        parallel_for(start, end + 1, [&](int i) {
-          if (child_indexes[i] != -1 &&
-              (i == start || child_indexes[i] != child_indexes[i - 1])) {
-            starts[i] = i;
-          }
+  parallel_for(start, end + 1, [&](int i) {
+    if (child_indexes[i] != -1 &&
+        (i == start || child_indexes[i] != child_indexes[i - 1])) {
+      starts[i] = i;
+    }
 
-          if (child_indexes[i] != -1 &&
-              (i == end || child_indexes[i] != child_indexes[i + 1])) {
-            ends[i] = i;
-          }
-        });
-      },
-      [&] {
-        for (int i = start; i <= end; i++) {
-          if (child_indexes[i] != -1 &&
-              (i == start || child_indexes[i] != child_indexes[i - 1])) {
-            starts[i] = i;
-          }
-
-          if (child_indexes[i] != -1 &&
-              (i == end || child_indexes[i] != child_indexes[i + 1])) {
-            ends[i] = i;
-          }
-        }
-      });
+    if (child_indexes[i] != -1 &&
+        (i == end || child_indexes[i] != child_indexes[i + 1])) {
+      ends[i] = i;
+    }
+  });
 
   parray<intT> child_pos_start_ =
       filter(starts.begin() + start, starts.begin() + end + 1,
@@ -358,7 +294,8 @@ std::shared_ptr<std::vector<bool>> Tree<T>::p_execute(ActionsPtr<T> actions) {
 }
 
 template <typename T>
-std::shared_ptr<std::vector<int>> build_modifying_sum_vector(ActionsPtr<T> actions) {
+std::shared_ptr<std::vector<int>>
+build_modifying_sum_vector(ActionsPtr<T> actions) {
   auto sum = std::make_shared<std::vector<int>>();
   int current_sum = 0;
   for (auto action : *actions) {
@@ -370,8 +307,7 @@ std::shared_ptr<std::vector<int>> build_modifying_sum_vector(ActionsPtr<T> actio
   return std::move(sum);
 }
 
-template <typename T>
-void Tree<T>::print(const std::string &prefix) {
+template <typename T> void Tree<T>::print(const std::string &prefix) {
   std::cout << prefix << "└──";
 
   m_root->print();
@@ -383,17 +319,14 @@ void Tree<T>::print(const std::string &prefix) {
   }
 }
 
-template <typename T>
-void Tree<T>::helpInsert() {
+template <typename T> void Tree<T>::helpInsert() {
   m_root->increaseSize();
   m_root->increaseWeight();
 }
 
-template <typename T>
-void Tree<T>::helpRemove() { m_root->decreaseSize(); }
+template <typename T> void Tree<T>::helpRemove() { m_root->decreaseSize(); }
 
-template <typename T>
-void Tree<T>::increaseSize() { m_root->increaseSize(); }
+template <typename T> void Tree<T>::increaseSize() { m_root->increaseSize(); }
 
 template <typename T>
 void Tree<T>::rebuild(ActionsPtr<T> actions, int start, int end,
@@ -462,8 +395,7 @@ void Tree<T>::rebuild(ActionsPtr<T> actions, int start, int end,
   delete rebuildingElements;
 }
 
-template <typename T>
-void Tree<T>::rebuild() {
+template <typename T> void Tree<T>::rebuild() {
   std::vector<ElementPtr<T>> *rebuildingElements =
       compoundRebuildingVector(); // RIGHT
   rebuild(rebuildingElements, 0, rebuildingElements->size() - 1);
@@ -501,32 +433,16 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start,
   auto flag_end = false;
 
   auto y = std::vector<int>(rebuildingElements->size(), -1);
-  granularity::cstmt(
-      p_exec_tree7, [&] { return end - start + 1; },
-      [&] {
-        parallel_for(start, end + 1, [&](int i) {
-          if (start == end || i == start + step / 2 ||
-              i >= start + step / 2 && (i - start - step / 2) % step == 0) {
-            y[i] = -1 * i - 1;
-            flag_start = (i == start);
-            flag_end = (i == end);
-          } else {
-            y[i] = i;
-          }
-        });
-      },
-      [&] {
-        for (int i = start; i < end + 1; i++) {
-          if (start == end || i == start + step / 2 ||
-              i >= start + step / 2 && (i - start - step / 2) % step == 0) {
-            y[i] = -1 * i - 1;
-            flag_start = (i == start);
-            flag_end = (i == end);
-          } else {
-            y[i] = i;
-          }
-        }
-      });
+  parallel_for(start, end + 1, [&](int i) {
+    if (start == end || i == start + step / 2 ||
+        i >= start + step / 2 && (i - start - step / 2) % step == 0) {
+      y[i] = -1 * i - 1;
+      flag_start = (i == start);
+      flag_end = (i == end);
+    } else {
+      y[i] = i;
+    }
+  });
 
   parray<intT> newRepresentativesIds =
       filter(y.begin() + start, y.begin() + end + 1,
@@ -534,49 +450,23 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start,
 
   auto newRepresentatives =
       std::vector<ElementPtr<T>>(newRepresentativesIds.size());
-  granularity::cstmt(
-      p_exec_tree8, [&] { return end - start + 1; },
-      [&] {
-        parallel_for(
-            0, static_cast<int>(newRepresentativesIds.size()), [&](int i) {
-              newRepresentatives[i] =
-                  (*rebuildingElements)[(-1 * (newRepresentativesIds[i] + 1))];
-            });
-      },
-      [&] {
-        for (int i = 0; i < newRepresentativesIds.size(); i++) {
-          newRepresentatives[i] =
-              (*rebuildingElements)[(-1 * (newRepresentativesIds[i] + 1))];
-        }
-      });
+  parallel_for(0, static_cast<int>(newRepresentativesIds.size()), [&](int i) {
+    newRepresentatives[i] =
+        (*rebuildingElements)[(-1 * (newRepresentativesIds[i] + 1))];
+  });
 
   auto starts = std::vector<int>(rebuildingElements->size(), -1);
   auto ends = std::vector<int>(rebuildingElements->size(), -1);
 
-  granularity::cstmt(
-      p_exec_tree6, [&] { return end - start + 1; },
-      [&] {
-        parallel_for(start, end + 1, [&](int i) {
-          if (y[i] >= 0 && (i == start || y[i - 1] < 0)) {
-            starts[i] = i;
-          }
+  parallel_for(start, end + 1, [&](int i) {
+    if (y[i] >= 0 && (i == start || y[i - 1] < 0)) {
+      starts[i] = i;
+    }
 
-          if (y[i] >= 0 && (i == end || y[i + 1] < 0)) {
-            ends[i] = i;
-          }
-        });
-      },
-      [&] {
-        for (int i = start; i <= end; i++) {
-          if (y[i] >= 0 && (i == start || y[i - 1] < 0)) {
-            starts[i] = i;
-          }
-
-          if (y[i] >= 0 && (i == end || y[i + 1] < 0)) {
-            ends[i] = i;
-          }
-        }
-      });
+    if (y[i] >= 0 && (i == end || y[i + 1] < 0)) {
+      ends[i] = i;
+    }
+  });
 
   parray<intT> child_pos_start_ =
       filter(starts.begin() + start, starts.begin() + end + 1,
@@ -593,29 +483,13 @@ void Tree<T>::rebuild(std::vector<ElementPtr<T>> *rebuildingElements, int start,
     auto children_tmp =
         std::make_shared<std::vector<TreePtr<T>>>(child_pos_start_.size());
 
-    granularity::cstmt(
-        p_exec_tree1,
-        [&, rebuildingElements = rebuildingElements] {
-          return (end - start + 1) * child_pos_start_.size();
-        },
-        [&] {
-          parallel_for(0, static_cast<int>(child_pos_start_.size()),
-                       /*comp,*/ [&](int i) {
-                         auto newChild = std::make_shared<Tree<T>>();
-                         newChild->rebuild(rebuildingElements,
-                                           child_pos_start_[i],
-                                           child_pos_end_[i]);
-                         (*children_tmp)[i] = newChild;
-                       });
-        },
-        [&] {
-          for (int i = 0; i < child_pos_start_.size(); i++) {
-            auto newChild = std::make_shared<Tree<T>>();
-            newChild->rebuild(rebuildingElements, child_pos_start_[i],
-                              child_pos_end_[i]);
-            (*children_tmp)[i] = newChild;
-          }
-        });
+    parallel_for(0, static_cast<int>(child_pos_start_.size()),
+                 /*comp,*/ [&](int i) {
+                   auto newChild = std::make_shared<Tree<T>>();
+                   newChild->rebuild(rebuildingElements, child_pos_start_[i],
+                                     child_pos_end_[i]);
+                   (*children_tmp)[i] = newChild;
+                 });
 
     for (auto child : *children_tmp) {
       m_children.push_back(child);
@@ -667,8 +541,7 @@ std::vector<ElementPtr<T>> *Tree<T>::compoundRebuildingVector(
   return rebuildingElements;
 }
 
-template <typename T>
-bool Tree<T>::updateTreeState() {
+template <typename T> bool Tree<T>::updateTreeState() {
   m_root->increaseCounter();
 
   if (m_root->isOverflowing()) {
@@ -679,18 +552,15 @@ bool Tree<T>::updateTreeState() {
   return false;
 }
 
-template <typename T>
-void Tree<T>::createChildren() {
+template <typename T> void Tree<T>::createChildren() {
   if (m_children.empty()) {
     m_children.push_back(std::make_shared<Tree<T>>());
   }
   m_children.push_back(std::make_shared<Tree<T>>());
 }
 
-template <typename T>
-NodePtr<T> Tree<T>::getNode() { return m_root; }
+template <typename T> NodePtr<T> Tree<T>::getNode() { return m_root; }
 
-template <typename T>
-std::vector<TreePtr<T>> Tree<T>::getChildren() {
+template <typename T> std::vector<TreePtr<T>> Tree<T>::getChildren() {
   return m_children;
 }

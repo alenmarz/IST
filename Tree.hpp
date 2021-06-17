@@ -403,10 +403,8 @@ void Tree<T>::rebuild(ActionsPtr<T> actions, int start, int end,
   }
 
   auto y = std::make_shared<std::vector<int>>(result_elements->size(), -1);
-  auto starts =
-      std::make_shared<std::vector<int>>(result_elements->size(), -1);
-  auto ends =
-      std::make_shared<std::vector<int>>(result_elements->size(), -1);
+  auto starts = std::make_shared<std::vector<int>>(result_elements->size(), -1);
+  auto ends = std::make_shared<std::vector<int>>(result_elements->size(), -1);
 
   rebuild(result_elements, 0, result_elements->size() - 1, y, starts, ends);
   delete rebuildingElements;
@@ -551,17 +549,17 @@ std::vector<ElementPtr<T>> *Tree<T>::compoundRebuildingVector(
         markedBias);
   }
 
-  for (int i = 0; i < rootRepresentatives.size(); i++) {
+  parallel_for(0, static_cast<int>(rootRepresentatives.size()), [&](int i) {
     if (!rootRepresentatives[i]->isMarked()) {
       (*rebuildingElements)[childrenTreesElementsPositions[i + 1] - 1] =
           rootRepresentatives[i];
     }
-  }
+  });
 
-  for (int i = 0; i < m_children.size(); i++) {
+  parallel_for(0, static_cast<int>(m_children.size()), [&](int i) {
     m_children[i]->compoundRebuildingVector(rebuildingElements,
                                             childrenTreesElementsPositions[i]);
-  }
+  });
 
   return rebuildingElements;
 }

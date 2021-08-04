@@ -1,9 +1,18 @@
-[submodule "lib/sptl"]
-	path = lib/sptl
-	url = https://github.com/deepsea-inria/sptl
 [submodule "lib/cmdline"]
 	path = lib/cmdline
 	url = https://github.com/deepsea-inria/cmdline
 [submodule "lib/chunkedseq"]
 	path = lib/chunkedseq
 	url = https://github.com/deepsea-inria/chunkedseq
+[submodule "lib/pbbs-pctl"]
+	path = lib/pbbs-pctl
+	url = https://github.com/deepsea-inria/pbbs-pctl
+[submodule "lib/pbbs-include"]
+	path = lib/pbbs-include
+	url = https://github.com/deepsea-inria/pbbs-include
+[submodule "lib/quickcheck"]
+	path = lib/quickcheck
+	url = http://software.legiasoft.com/git/quickcheck.git
+[submodule "lib/pctl"]
+	path = lib/pctl
+	url = https://github.com/deepsea-inria/pctl

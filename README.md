@@ -1,4 +1,4 @@
-# Parallel Batched Interpolation Search Tree Implementation
+# Parallel Batched Interpolation Search Tree
 
 1. Build OpenCilk from source files using the guide: https://github.com/OpenCilk/infrastructure/blob/release/INSTALLING.md
 
